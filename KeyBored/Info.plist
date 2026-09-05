@@ -2,6 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <!-- Export compliance, declared by Jonah on 2026-09-05: the app uses no encryption.
+       It contains no cryptography and does no networking at all — no CryptoKit, no
+       CommonCrypto, no Security framework, no URLSession, no third-party dependency, and
+       the keyboard has no Full Access so iOS would not let it reach the network anyway.
+       Answering it here rather than in App Store Connect is why the question stops being
+       asked on every upload. Do not delete this as unexplained: without it a build uploads
+       successfully and is then never distributed to any tester, which is a failure that
+       looks like success. -->
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
   <key>UILaunchScreen</key>
   <dict/>
   <key>UIApplicationSceneManifest</key>
