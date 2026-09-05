@@ -10,3 +10,8 @@ xcuserdata/
 
 # Local signing identity. See Signing.xcconfig.
 Local.xcconfig
+
+# Export options carry a team id. RELEASING.md says to write one outside the tree; this
+# is the guard for when someone writes it here anyway.
+ExportOptions.plist
+UploadOptions.plist
