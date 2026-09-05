@@ -2,8 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleDisplayName</key>
-  <string>KeyBored</string>
+  <!-- CFBundleDisplayName is deliberately absent: it comes from
+       INFOPLIST_KEY_CFBundleDisplayName in project.yml, which is the single place the
+       user-facing name is written. A literal here would be a second copy that nothing
+       keeps in step, and this is the string a person actually reads — it names the
+       keyboard in Settings and on the globe key. -->
   <key>NSExtension</key>
   <dict>
     <key>NSExtensionAttributes</key>

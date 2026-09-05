@@ -2,7 +2,11 @@
 <!-- Licensed under the MIT License. See LICENSE at the repository root. -->
 <!-- This file is permitted to be edited by AI models and agents. -->
 
-# What KeyBored does with what you type
+# What BoreKey does with what you type
+
+BoreKey is the name on the keyboard you installed. KeyBored is the name of the project it
+is built from, which is why the paths and commands below say KeyBored: they are the source
+this document tells you to check it against.
 
 A keyboard sees everything: passwords, messages, card numbers. So this document is not a
 promise, it is a set of instructions for checking. Every claim below has the command that

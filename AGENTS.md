@@ -8,6 +8,12 @@ Notes for anyone, human or agent, working on KeyBored.
 
 ## What KeyBored is
 
+**The project is KeyBored; the app is BoreKey.** The repository, the targets, the bundle
+identifiers and every path are KeyBored. BoreKey is the only name a person sees: the app on
+the home screen, and the keyboard in Settings and on the globe key. It is written once, as
+`PRODUCT_DISPLAY_NAME` in `project.yml`, and read back off the bundle by `Branding` in
+`Shared/Branding.swift` — never as a literal in an Info.plist or a view.
+
 An iOS custom keyboard that looks and measures like the stock iOS keyboard but predicts
 mechanistically rather than with a model. Instead of a language model, it scores each word
 in its dictionary by how far your taps landed from where that word's letters actually are,

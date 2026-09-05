@@ -9,5 +9,17 @@
     <key>UIApplicationSupportsMultipleScenes</key>
     <false/>
   </dict>
+  <!-- All four, because the app ships to iPad as well as iPhone and iPad multitasking
+       requires every orientation. Omitting this key entirely builds and runs fine and is
+       rejected at upload: App Store Connect returns error 90474, "No orientations were
+       specified in the com.tg-techie.app.keybored bundle". The container app is a single
+       informational screen, so it has no reason to refuse any of them. -->
+  <key>UISupportedInterfaceOrientations</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+    <string>UIInterfaceOrientationPortraitUpsideDown</string>
+    <string>UIInterfaceOrientationLandscapeLeft</string>
+    <string>UIInterfaceOrientationLandscapeRight</string>
+  </array>
 </dict>
 </plist>

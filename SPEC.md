@@ -544,6 +544,16 @@ Deployment target iOS 26.0; Swift 6 with `SWIFT_STRICT_CONCURRENCY: complete`. T
 tracks no `DEVELOPMENT_TEAM`: a signing identity belongs to whoever is building, not to the
 repository. `RELEASING.md` carries the archive and distribution procedure.
 
+**The project is KeyBored and the shipped app is BoreKey.** Everything above — targets,
+directories, bundle identifiers, the App Store Connect SKU — is KeyBored, and none of it is
+user-visible. BoreKey is the name a person reads: the app on the home screen, and the
+keyboard in Settings and on the globe key. The two are separate namespaces and a bundle
+identifier is permanent once a store record exists, so they are not kept in step. The brand
+is written once, as `PRODUCT_DISPLAY_NAME` in `project.yml`, feeds
+`INFOPLIST_KEY_CFBundleDisplayName` for all three targets, and is read back off the bundle
+by `Branding` — the same arrangement `KeyBoredVersion` uses for `MARKETING_VERSION`, so that
+neither `Info.plist` carries a literal copy.
+
 **Full Access (`RequestsOpenAccess`) is off, and what that costs is specific.** From
 Apple's App Extension Programming Guide, a keyboard without it cannot share a container
 with its containing app, cannot use `UIPasteboard`, and cannot play keyboard clicks via

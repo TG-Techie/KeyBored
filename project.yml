@@ -18,8 +18,16 @@ settings:
     #   xcodebuild -scheme KeyBored -destination 'generic/platform=iOS Simulator' \
     #     CODE_SIGNING_ALLOWED=NO build
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.0.1"
+    MARKETING_VERSION: "0.0.2"
     CURRENT_PROJECT_VERSION: "1"
+    # The one place the user-facing name is written. The project, the targets, the bundle
+    # identifiers and the repository are all still KeyBored; BoreKey is only what a person
+    # sees — the app's name on the home screen, and the keyboard's name in Settings and in
+    # the globe-key switcher. Both come from the setting below rather than from a literal
+    # in either Info.plist, and Swift reads it back off the bundle in `Shared/Branding.swift`,
+    # so renaming means editing this line.
+    PRODUCT_DISPLAY_NAME: BoreKey
+    INFOPLIST_KEY_CFBundleDisplayName: $(PRODUCT_DISPLAY_NAME)
     SWIFT_STRICT_CONCURRENCY: complete
 targets:
   KeyBored:

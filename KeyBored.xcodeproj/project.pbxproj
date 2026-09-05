@@ -17,6 +17,9 @@
 		2F37E2A25B5C49CAAF7F377B /* KeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2400830B70778C048C3CBE28 /* KeyboardController.swift */; };
 		3791B1AB85780A3A63444BB3 /* KeyboardGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7D44C12690E9BB1E3E55AD /* KeyboardGeometry.swift */; };
 		37E34D1191C7349AB501F090 /* KeyboardGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7D44C12690E9BB1E3E55AD /* KeyboardGeometry.swift */; };
+		38A5A9B1EA2629CE86167E93 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1684CD1434266B7E0D519C3 /* Branding.swift */; };
+		395D51EA5560B93A37FF1C1C /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1684CD1434266B7E0D519C3 /* Branding.swift */; };
+		3A2E003CE408A01E219BB967 /* BrandingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B064B3FB2291087F41E09E7 /* BrandingTests.swift */; };
 		4D2606CF1AE6B5D83AF3A29D /* KeyBoredApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2288684F8F59D147F102B5C /* KeyBoredApp.swift */; };
 		4FEE6875BD847E19741BC7B8 /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
 		55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
@@ -25,6 +28,7 @@
 		5B24CDCD9C449C33D6E8CBF2 /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
 		6AC531056FA55E48B6E3FA7E /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */; };
 		6E65F0197ECFBABAC946012F /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
+		7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1684CD1434266B7E0D519C3 /* Branding.swift */; };
 		787BC0EB5E7F09211D931157 /* KeyboardControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */; };
 		83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
@@ -79,6 +83,7 @@
 
 /* Begin PBXFileReference section */
 		13593DD3399D48D8AC7170D5 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
+		1B064B3FB2291087F41E09E7 /* BrandingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandingTests.swift; sourceTree = "<group>"; };
 		1F39B60D11993CE399ED4D4F /* KeyBoredKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KeyBoredKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2400830B70778C048C3CBE28 /* KeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardController.swift; sourceTree = "<group>"; };
 		29162360F13E2B650EB8AD47 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -91,6 +96,7 @@
 		95610C2A24233305E18A020D /* ConstellationMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationMatcher.swift; sourceTree = "<group>"; };
 		9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "12dicts-3esl-lowercase.txt"; sourceTree = "<group>"; };
 		9DBFEC4FFCC1BD393BB0F0B1 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		A1684CD1434266B7E0D519C3 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		A2288684F8F59D147F102B5C /* KeyBoredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredApp.swift; sourceTree = "<group>"; };
 		A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersionTests.swift; sourceTree = "<group>"; };
 		AF7D44C12690E9BB1E3E55AD /* KeyboardGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardGeometry.swift; sourceTree = "<group>"; };
@@ -147,6 +153,7 @@
 		60414D0FBFA05270C7EF83AF /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				A1684CD1434266B7E0D519C3 /* Branding.swift */,
 				95610C2A24233305E18A020D /* ConstellationMatcher.swift */,
 				42206740D70CC15F5377706D /* EnglishLexicon.swift */,
 				2400830B70778C048C3CBE28 /* KeyboardController.swift */,
@@ -163,6 +170,7 @@
 		DD21A6CFD872C7999FC70F5D /* KeyBoredTests */ = {
 			isa = PBXGroup;
 			children = (
+				1B064B3FB2291087F41E09E7 /* BrandingTests.swift */,
 				FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */,
 				6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */,
 				A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */,
@@ -321,6 +329,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */,
+				3A2E003CE408A01E219BB967 /* BrandingTests.swift in Sources */,
 				846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */,
 				4FEE6875BD847E19741BC7B8 /* EnglishLexicon.swift in Sources */,
 				83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */,
@@ -340,6 +350,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				38A5A9B1EA2629CE86167E93 /* Branding.swift in Sources */,
 				DBFF1BE423AFF63D6DB50C95 /* ConstellationMatcher.swift in Sources */,
 				AD8649BA4246460957EE60D7 /* ContentView.swift in Sources */,
 				6E65F0197ECFBABAC946012F /* EnglishLexicon.swift in Sources */,
@@ -357,6 +368,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				395D51EA5560B93A37FF1C1C /* Branding.swift in Sources */,
 				E97B9025814D2D8173FE6A9F /* ConstellationMatcher.swift in Sources */,
 				5B24CDCD9C449C33D6E8CBF2 /* EnglishLexicon.swift in Sources */,
 				F277EAFA3F7386F79B40B697 /* KeyBoredVersion.swift in Sources */,
@@ -483,10 +495,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.1;
+				MARKETING_VERSION = 0.0.2;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				PRODUCT_DISPLAY_NAME = BoreKey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -549,11 +563,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.1;
+				MARKETING_VERSION = 0.0.2;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_DISPLAY_NAME = BoreKey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;

@@ -4,16 +4,16 @@
 
 # Releasing KeyBored
 
-Everything needed to take a fresh clone to a TestFlight build of 0.0.1, written for the
-person doing the App Store Connect setup themselves.
+Everything needed to take a fresh clone to a TestFlight build, written for the person
+doing the App Store Connect work themselves.
 
-**What is verified and what is not.** Everything under "The repository side" was run on
-this machine and its output is quoted. On the account side, as of 2026-09-05: both App IDs
-are registered, store provisioning profiles exist for them, a distribution certificate has
-been issued, and a distribution-signed ipa has been produced. What does **not** exist is
-the App Store Connect app record, and no agreement has been accepted by anyone but the
-account holder. Everything under "Your side" is written from Apple's documented flow rather
-than from having done it here, and it says so where a command was not run.
+**What is verified.** Every command below was run on this machine and its output is quoted.
+As of 2026-09-05 the whole path has been walked once, end to end: both App IDs registered,
+store provisioning profiles issued, a distribution certificate issued, an App Store Connect
+app record created, and version 0.0.1 build 1 uploaded and accepted for processing. No
+agreement was presented at any step of that run — not at archive, export, record creation
+or upload. That is one observed run on an account whose agreements were already in order,
+not a claim that none is ever presented.
 
 ## What the project emits
 
@@ -21,9 +21,16 @@ Read out of an actual archive with `plutil`, not from `project.yml`:
 
     app         com.tg-techie.app.keybored
     extension   com.tg-techie.app.keybored.keyboard
-    version     0.0.1  (CFBundleShortVersionString, MARKETING_VERSION)
-    build       1      (CURRENT_PROJECT_VERSION)
+    display     BoreKey  (CFBundleDisplayName, from PRODUCT_DISPLAY_NAME)
+    version     0.0.2    (CFBundleShortVersionString, MARKETING_VERSION)
+    build       1        (CURRENT_PROJECT_VERSION)
     minimum iOS 26.0
+
+The identifiers say KeyBored and the app says BoreKey, on purpose. `KeyBored` was already
+taken as an App Store name; a bundle identifier is a separate namespace and is permanent
+once a record exists, so it was left alone. The display name is written once, as
+`PRODUCT_DISPLAY_NAME` in `project.yml`, and reaches both bundles through
+`INFOPLIST_KEY_CFBundleDisplayName`.
 
 The extension's identifier is the app's with `.keyboard` appended, and it has to stay that
 way: iOS requires an app extension's bundle identifier to be a child of its containing
@@ -139,10 +146,10 @@ produce a warning:
 App Store Connect rejects an upload from an app with no icon, so this has to be true before
 the first upload rather than fixed in a later build.
 
-## Your side — App Store Connect
+## The account side — App Store Connect
 
-**Not verified here.** No agent has touched the account, and this section is the documented
-flow rather than a transcript. Expect the details to have moved since it was written.
+**Observed, 2026-09-05.** This section is a transcript of a run that reached processing,
+not the documented flow. Where a step was not exercised it says so.
 
 1. **Two identifiers**, in Certificates, Identifiers & Profiles, both of type App ID:
    `com.tg-techie.app.keybored` and `com.tg-techie.app.keybored.keyboard`. Neither needs a
@@ -150,23 +157,62 @@ flow rather than a transcript. Expect the details to have moved since it was wri
    registers these for you, which is what happened on this machine.
 
 2. **One app record** in App Store Connect, for the app identifier only. The extension does
-   not get its own record; it ships inside the app. **Xcode cannot create this** — it
-   attaches a build to a record that already exists — so it is App Store Connect's web UI or
-   the App Store Connect API with a key. Without it, an upload fails with
+   not get its own record; it ships inside the app. Without it, an upload fails with
    `error: exportArchive Error Downloading App Information`, whose real cause appears only
    in the verbose distribution log as
    `DistributionAppRecordProviderError.missingApp(bundleId: …)`.
 
-   The **app name must be unique across the whole App Store**, so the name on the record may
-   end up differing from the bundle id.
+   **Xcode's Organizer creates the record itself.** Window ▸ Organizer ▸ Distribute App ▸
+   App Store Connect, and when the bundle id has no record it offers a New App form — name,
+   SKU, primary language — and posts it. That was watched happening here, and the record for
+   this app was made that way. `xcodebuild` cannot: no `-exportOptionsPlist` key or flag
+   exposes it, and an upload without a record dies at the fetch step above. So the routes are
+   Organizer, the App Store Connect web UI, or the API with a key.
+
+   The **app name must be unique across the whole App Store**, and the bundle id is a
+   separate namespace, so the two need not match — here they do not. `KeyBored` was rejected
+   with `ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE.DIFFERENT_ACCOUNT` and the record was
+   created as `BoreKey`.
+
+   Two traps on that screen, both of which make the UI disagree with what was actually sent.
+   Setting the name through the accessibility API rather than typing it updates the field and
+   the accessibility value while Xcode keeps the old string, so a screenshot shows the new
+   name and the request carries the old one. And immediately after a successful create,
+   Organizer re-fetches the app list, gets `missingApp` for the record it has just made, and
+   shows `IDEDistribution.DistributionAppRecordProviderError error 0` — a propagation lag
+   reported as a failure. **Read the outgoing request and its status in
+   `IDEDistributionAppStoreConnect.log` rather than believing the sheet**; the log path is
+   printed in the first line of the distribution output.
 
 3. **Agreements.** Apple will raise whatever license, tax and banking agreements the account
    has outstanding. Those are yours to read and accept; no agent accepts anything in your
    name.
 
 4. **Upload**, once the record exists, by flipping `destination` to `upload` in the export
-   options and re-running the export. Xcode's Organizer
-   (Window ▸ Organizer ▸ Distribute App ▸ TestFlight) does the same thing with a UI.
+   options and re-running the export. Organizer does the same thing with a UI; the command
+   line is easier to read afterwards.
+
+       xcodebuild -exportArchive -archivePath build/KeyBored.xcarchive \
+         -exportOptionsPlist UploadOptions.plist -exportPath out \
+         -allowProvisioningUpdates
+
+   ending in `Upload succeeded.` and `** EXPORT SUCCEEDED **`. Processing then takes Apple's
+   own time; TestFlight shows the build when it finishes.
+
+   **Orientations are checked at upload and nowhere else.** The first upload attempt was
+   rejected outright:
+
+       Invalid bundle. No orientations were specified in the com.tg-techie.app.keybored
+       bundle. To support iPad multitasking, specify the "UIInterfaceOrientationPortrait,
+       UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft,
+       UIInterfaceOrientationLandscapeRight" orientations for the
+       UISupportedInterfaceOrientations Info.plist key.
+       code = 90474
+
+   `KeyBored/Info.plist` now declares all four. Nothing local catches this: the app builds,
+   runs and archives without the key. It is the same shape as the missing icon — a manifest
+   key that only App Store Connect validates — so check both in the built product before an
+   upload rather than after.
 
 5. **Internal testing** needs no review. External testing needs Beta App Review, and a
    custom keyboard draws attention to what it does with keystrokes: `PRIVACY.md` answers
@@ -186,7 +232,11 @@ profile complications from capabilities.
 
 ## After the upload
 
-Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` — they are set once
-under `settings.base` and apply to all three targets — then `xcodegen generate`. App Store
-Connect refuses a second upload with a build number it has already seen, and it is easier
-to bump before archiving than to re-cut.
+Bump `MARKETING_VERSION` in `project.yml` — it is set once under `settings.base` and applies
+to all three targets — then `xcodegen generate`. App Store Connect refuses a second upload
+with a version and build pair it has already seen, and it is easier to bump before archiving
+than to re-cut. `CURRENT_PROJECT_VERSION` is the build number and only has to increase within
+one marketing version, so a new version can start again at 1.
+
+0.0.1 build 1 is spent: it was uploaded on 2026-09-05 and cannot be relabelled. The tree is
+at 0.0.2 build 1, which has not been uploaded.
