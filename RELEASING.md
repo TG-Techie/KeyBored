@@ -8,23 +8,24 @@ Everything needed to take a fresh clone to a TestFlight build of 0.0.1, written 
 person doing the App Store Connect setup themselves.
 
 **What is verified and what is not.** Everything under "The repository side" was run on
-this machine and the output is quoted. Nothing under "Your side" was: no agent has touched
-this project's App Store Connect account, no identifiers have been registered, no app
-record exists, and no agreement has been accepted. Those steps are written from Apple's
-documented flow, not from having done them here, and they are marked. Where a command was
-not run, it says so rather than reading as tested.
+this machine and its output is quoted. On the account side, as of 2026-09-05: both App IDs
+are registered, store provisioning profiles exist for them, a distribution certificate has
+been issued, and a distribution-signed ipa has been produced. What does **not** exist is
+the App Store Connect app record, and no agreement has been accepted by anyone but the
+account holder. Everything under "Your side" is written from Apple's documented flow rather
+than from having done it here, and it says so where a command was not run.
 
 ## What the project emits
 
 Read out of an actual archive with `plutil`, not from `project.yml`:
 
-    app         com.tg-techie.app.keybored.alpha-v0-1-0
-    extension   com.tg-techie.app.keybored.alpha-v0-1-0.Keyboard
+    app         com.tg-techie.app.keybored
+    extension   com.tg-techie.app.keybored.keyboard
     version     0.0.1  (CFBundleShortVersionString, MARKETING_VERSION)
     build       1      (CURRENT_PROJECT_VERSION)
     minimum iOS 26.0
 
-The extension's identifier is the app's with `.Keyboard` appended, and it has to stay that
+The extension's identifier is the app's with `.keyboard` appended, and it has to stay that
 way: iOS requires an app extension's bundle identifier to be a child of its containing
 app's, and a pair that does not nest is rejected rather than warned about. Both identifiers
 are set in `project.yml`; change them there and regenerate, never in Xcode's UI, or the
@@ -72,42 +73,71 @@ Either works; the file is less to remember if you will archive more than once.
     xcodebuild -scheme KeyBored -destination 'generic/platform=iOS' \
       -archivePath build/KeyBored.xcarchive archive
 
-**This fails until the identifiers exist in your account**, and the failure is the useful
-kind — it names exactly what is missing. Run verbatim on this machine, with a valid team id
-in `Local.xcconfig` and nothing registered:
+**This fails on an account where the identifiers are not registered**, and the failure is
+the useful kind — it names exactly what is missing:
 
-    error: No profiles for 'com.tg-techie.app.keybored.alpha-v0-1-0' were found: Xcode
-    couldn't find any iOS App Development provisioning profiles matching
-    'com.tg-techie.app.keybored.alpha-v0-1-0'.
+    error: No profiles for 'com.tg-techie.app.keybored' were found …
     ** ARCHIVE FAILED **
 
-Adding `-allowProvisioningUpdates` is what lets Xcode register the identifiers and generate
-the profiles for you. It is left out of the line above on purpose: it writes to your
-developer account, so it is yours to run knowingly rather than something to copy without
-noticing.
-
-That everything *except* provisioning is archive-ready was verified separately, by cutting
-an archive with signing switched off:
+`-allowProvisioningUpdates` is what lets Xcode register the identifiers and issue the
+profiles. It is left out of the line above on purpose: **it writes to your developer
+account**, so it is yours to run knowingly rather than to copy without noticing.
 
     xcodebuild -scheme KeyBored -destination 'generic/platform=iOS' \
-      -archivePath build/Unsigned.xcarchive archive CODE_SIGNING_ALLOWED=NO
-    ** ARCHIVE SUCCEEDED **
+      -archivePath build/KeyBored.xcarchive archive -allowProvisioningUpdates
 
-The resulting archive contains `KeyBored.app` with `PlugIns/KeyBoredKeyboard.appex`
-embedded and the two identifiers above. So if the signed archive fails, the cause is on the
-account side, not in the project.
+One quirk, seen here: the very first run registered the identifier, issued the profile, and
+then failed with `Build input file cannot be found: …/<uuid>.mobileprovision` because the
+profile had not been written to disk yet. Running the same command again succeeded. That is
+not a problem with the project.
 
-### The app icon is not in the archive yet
+**An archive is signed for development.** Distribution signing happens at export, so an
+archive reporting `Signing Identity: "Apple Development: …"` is correct and not a mistake.
 
-`KeyBored/Assets.xcassets/AppIcon.appiconset/Contents.json` declares one universal
-1024×1024 iOS slot and no image fills it. Verified on the archive above: the built `.app`
-has no `Assets.car` and its `Info.plist` has no icon keys at all.
+### The export
 
-App Store Connect rejects an upload with no app icon, so **the icon has to land before the
-first upload**, not after. Drop the 1024×1024 into that slot — or open the asset catalog in
-Xcode and drag it in, which writes the same thing — and re-archive. Nothing else needs
-changing: `ASSETCATALOG_COMPILER_APPICON_NAME` is already set to `AppIcon` on the app
-target.
+    xcodebuild -exportArchive -archivePath build/KeyBored.xcarchive \
+      -exportOptionsPlist ExportOptions.plist -exportPath out \
+      -allowProvisioningUpdates
+
+with an options plist of:
+
+    method          app-store-connect      (this is the Xcode 15+ name for app-store)
+    destination     export                 (or upload, see below)
+    teamID          YOURTEAMID
+    signingStyle    automatic
+    uploadSymbols   true
+
+Write that plist somewhere outside the repository — it carries a team id.
+
+Export before you upload. It separates two failures that otherwise arrive as one: whether
+the build can be signed for distribution, and whether it can reach App Store Connect. Check
+what actually signed it by asking the artefact rather than the keychain:
+
+    codesign -dvvv Payload/KeyBored.app
+    Authority=Apple Distribution: …
+
+`security find-identity` reports the default keychain search list, which is not the same
+set — Xcode 26 keeps managed distribution certificates outside it, so that command can show
+nothing while a perfectly good certificate is in use.
+
+### The app icon
+
+`KeyBored/AppIcon.icon` is an Icon Composer document: a directory of flat SVG layers plus
+`icon.json`. It is added to the project as an explicit file reference rather than by folder
+scan, because a folder scan would take it in as a group and `actool` would never see it.
+
+Verify it in the built product rather than in the build log, because a missing icon does not
+produce a warning:
+
+    ls build/KeyBored.xcarchive/Products/Applications/KeyBored.app
+    Assets.car   AppIcon60x60@2x.png   AppIcon76x76@2x~ipad.png
+
+    plutil -p …/KeyBored.app/Info.plist | grep CFBundleIconName
+    "CFBundleIconName" => "AppIcon"
+
+App Store Connect rejects an upload from an app with no icon, so this has to be true before
+the first upload rather than fixed in a later build.
 
 ## Your side — App Store Connect
 
@@ -115,21 +145,30 @@ target.
 flow rather than a transcript. Expect the details to have moved since it was written.
 
 1. **Two identifiers**, in Certificates, Identifiers & Profiles, both of type App ID:
-   `com.tg-techie.app.keybored.alpha-v0-1-0` and
-   `com.tg-techie.app.keybored.alpha-v0-1-0.Keyboard`. Register the app's first. Neither
-   needs any capability enabled — see the note on entitlements below.
+   `com.tg-techie.app.keybored` and `com.tg-techie.app.keybored.keyboard`. Neither needs a
+   capability enabled — see the note on entitlements below. `-allowProvisioningUpdates`
+   registers these for you, which is what happened on this machine.
+
 2. **One app record** in App Store Connect, for the app identifier only. The extension does
-   not get its own record; it ships inside the app.
-3. **Agreements.** Apple will raise whatever license and tax agreements the account has
-   outstanding, and possibly a fresh developer agreement. Those are yours to read and
-   accept. No agent has accepted, or may accept, anything in your name.
-4. **Then archive**, with `-allowProvisioningUpdates` or by letting Xcode manage signing.
-5. **Upload.** Xcode's Organizer (Window ▸ Organizer ▸ Distribute App ▸ TestFlight) is the
-   path with the fewest moving parts, and it surfaces validation failures — the missing
-   icon among them — before the upload rather than as an email afterwards. The CLI
-   equivalent is `xcrun altool --upload-app`, which needs an API key; it is listed as an
-   alternative and was not run here.
-6. **Internal testing** needs no review. External testing needs Beta App Review, and a
+   not get its own record; it ships inside the app. **Xcode cannot create this** — it
+   attaches a build to a record that already exists — so it is App Store Connect's web UI or
+   the App Store Connect API with a key. Without it, an upload fails with
+   `error: exportArchive Error Downloading App Information`, whose real cause appears only
+   in the verbose distribution log as
+   `DistributionAppRecordProviderError.missingApp(bundleId: …)`.
+
+   The **app name must be unique across the whole App Store**, so the name on the record may
+   end up differing from the bundle id.
+
+3. **Agreements.** Apple will raise whatever license, tax and banking agreements the account
+   has outstanding. Those are yours to read and accept; no agent accepts anything in your
+   name.
+
+4. **Upload**, once the record exists, by flipping `destination` to `upload` in the export
+   options and re-running the export. Xcode's Organizer
+   (Window ▸ Organizer ▸ Distribute App ▸ TestFlight) does the same thing with a UI.
+
+5. **Internal testing** needs no review. External testing needs Beta App Review, and a
    custom keyboard draws attention to what it does with keystrokes: `PRIVACY.md` answers
    that in the terms a reviewer asks it, and every claim in it names the command that
    checks it.

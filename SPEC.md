@@ -535,8 +535,8 @@ is not an app that runs.
 
 ## 10. Targets, entitlements, distribution
 
-    KeyBored/            container app, com.tg-techie.app.keybored.alpha-v0-1-0
-    KeyBoredKeyboard/    extension,     …alpha-v0-1-0.Keyboard
+    KeyBored/            container app, com.tg-techie.app.keybored
+    KeyBoredKeyboard/    extension,     com.tg-techie.app.keybored.keyboard
     Shared/              compiled into app, extension and tests
     KeyBoredTests/       swift-testing
 
