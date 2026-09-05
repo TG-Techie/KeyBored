@@ -1,0 +1,20 @@
+// Copyright 2026 Jonah Y-M (@TG-Techie) <jonah@tg-techie.com>
+// Licensed under the MIT License. See LICENSE at the repository root.
+// This file is permitted to be edited by AI models and agents.
+
+// Signing identity is the builder's, not the project's, so no team id is tracked here.
+//
+// The "?" makes the include optional: if Local.xcconfig does not exist, this file is a
+// no-op and the project still builds and tests. That is what lets a stranger clone the
+// repo and run the simulator build without owning an Apple Developer account, while the
+// machine that cuts a signed archive supplies its own team without ever tracking it.
+//
+// To sign locally, create Local.xcconfig beside this file — it is gitignored — with:
+//
+//     DEVELOPMENT_TEAM = YOURTEAMID
+//
+// Or pass it per invocation instead, which leaves no file at all:
+//
+//     xcodebuild -scheme KeyBored -destination generic/platform=iOS archive \
+//       -archivePath build/KeyBored.xcarchive DEVELOPMENT_TEAM=YOURTEAMID
+#include? "Local.xcconfig"

@@ -1,0 +1,77 @@
+name: KeyBored
+configFiles:
+  Debug: Signing.xcconfig
+  Release: Signing.xcconfig
+options:
+  bundleIdPrefix: com.tg-techie.app
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: en
+  indentWidth: 2
+  tabWidth: 2
+  usesTabs: false
+settings:
+  base:
+    # No DEVELOPMENT_TEAM here on purpose: signing identity is the builder's, not the
+    # project's. Set yours in Xcode's Signing & Capabilities, or pass
+    # DEVELOPMENT_TEAM=... to xcodebuild. The project builds and tests without one:
+    #   xcodebuild -scheme KeyBored -destination 'generic/platform=iOS Simulator' \
+    #     CODE_SIGNING_ALLOWED=NO build
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_STRICT_CONCURRENCY: complete
+targets:
+  KeyBored:
+    type: application
+    platform: iOS
+    sources:
+      - path: KeyBored
+        excludes:
+          - "AppIcon.icon"
+      # Icon Composer writes a directory, not a file, so it has to be added explicitly as
+      # a file reference; left to the folder scan above it would come in as a group and
+      # actool would never see it. The name must match ASSETCATALOG_COMPILER_APPICON_NAME.
+      - path: KeyBored/AppIcon.icon
+        type: file
+      - path: Shared
+        excludes:
+          - "Resources/README.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tg-techie.app.keybored.alpha-v0-1-0
+        INFOPLIST_FILE: KeyBored/Info.plist
+        GENERATE_INFOPLIST_FILE: true
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: KeyBoredKeyboard
+        embed: true
+  KeyBoredKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - KeyBoredKeyboard
+      - path: Shared
+        excludes:
+          - "Resources/README.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tg-techie.app.keybored.alpha-v0-1-0.Keyboard
+        INFOPLIST_FILE: KeyBoredKeyboard/Info.plist
+        GENERATE_INFOPLIST_FILE: true
+  KeyBoredTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - KeyBoredTests
+      - path: Shared
+        excludes:
+          - "Resources/README.md"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tg-techie.app.KeyBoredTests
+        # The other two targets carry hand-written Info.plists; the test bundle has no
+        # need of one, so it gets a generated one rather than a file to keep in step.
+        GENERATE_INFOPLIST_FILE: true
+    dependencies:
+      - target: KeyBored

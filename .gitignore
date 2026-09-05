@@ -1,0 +1,12 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Local agent/tooling configuration. Never belongs in a public repository.
+.mcp.json
+.claude/
+
+# Local signing identity. See Signing.xcconfig.
+Local.xcconfig
