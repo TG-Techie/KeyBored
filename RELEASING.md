@@ -306,4 +306,12 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
 - **0.0.3 build 1.** Uploaded at 20:51 EDT from commit `9932d04` with a clean tree, after
   typing "Hi there" into Safari with it on a simulator in both appearances.
 
-The tree is at 0.0.4 build 1. Bump before archiving again once that is spent.
+- **0.0.4 build 1.** Uploaded at 00:37 EDT on 2026-09-06 from commit `a8f40ef` with a clean
+  tree. The evidence behind it, in the order it was taken: 66 tests passing; the shipped
+  build installed and switched to from the globe's list; "The cat sat on the mat" typed
+  into Contacts' search field in light appearance and "the quick fox" in dark, both with
+  `tools/keys.sh`; caps lock latched with two strikes and "ABC DEF" typed under it; a
+  1500ms hold on delete emptying a ten-character field. The exported ipa was checked with
+  `codesign -dvvv` for an `Apple Distribution` authority before it went up.
+
+The tree is at 0.0.4 build 1, which is spent. Bump before archiving again.

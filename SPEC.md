@@ -1160,12 +1160,15 @@ which is what section 3.2 says it should.
 emptied a ten-character field. 0.4s to the first repeat and 0.1s after it predicts 12 in
 that window; 13 is that, with the run-loop timer's jitter.
 
-**The number plane, ours against stock, light appearance.** Row 2's ten caps end on exactly
-stock's pixels — 119, 238, 356, 475, 593, 712, 830, 949, 1067, 1186 of 1206 — and every one
-of them *begins* a pixel earlier than stock's: 19 against 20, 137 against 138, 256 against
-257, and so on for all ten. A systematic one-pixel widening on the leading edge, not a
-one-off. Not yet chased to its cause; recorded here so the next reading is a check rather
-than a discovery.
+**The number plane, ours against stock, light appearance.** Every cap in both of the ten-key
+rows ends on exactly stock's pixel — 119, 238, 356, 475, 593, 712, 830, 949, 1067, 1186 of
+1206. The leading edges differ by a pixel on some caps and not others, and *which* ones
+alternates: on the digits row ours begins at 19, 138, 256, 375, 493, 612, 730 where stock
+begins at 20, 138, 257, 375, 494, 612, 731. That is a third of a point — the two layouts
+place the same edges at the same fractional coordinates and the rasteriser rounds a few of
+them the other way. **Left alone deliberately.** The letters plane's cap is byte-equal to
+stock's (A.6), and chasing a third of a point on one plane is the kind of change that
+breaks the plane that already matches.
 
 **The light plate is three units off, and this contradicts A.4.** Ours reads `#DFE0E6` and
 stock `#E2E4E8` in this pair, where A.4 recorded stock's light plate as `#DFE0E6` — which
