@@ -9,10 +9,18 @@ Notes for anyone, human or agent, working on KeyBored.
 ## What KeyBored is
 
 **The project is KeyBored; the app is BoreKey.** The repository, the targets, the bundle
-identifiers and every path are KeyBored. BoreKey is the only name a person sees: the app on
-the home screen, and the keyboard in Settings and on the globe key. It is written once, as
+identifiers are KeyBored. BoreKey is the only name a person sees: the app on the home
+screen, and the keyboard in Settings and on the globe key. It is written once, as
 `PRODUCT_DISPLAY_NAME` in `project.yml`, and read back off the bundle by `Branding` in
 `Shared/Branding.swift` — never as a literal in an Info.plist or a view.
+
+The built products are named for it too — `BoreKey.app`, and `BoreKey.appex` inside its
+`PlugIns` — because `CFBundleName` can only be set through `PRODUCT_NAME` and is otherwise
+another place the old name shows. The Swift modules are not: `PRODUCT_MODULE_NAME` is
+pinned to the target names, so `@testable import KeyBored` stays true. `TEST_HOST` names
+the product and therefore has to be written out in `project.yml`; left to xcodegen's
+default it points at a `KeyBored.app` that no longer exists, and the symptom is not a
+build error but the whole test suite quietly declining to run.
 
 An iOS custom keyboard that looks and measures like the stock iOS keyboard but predicts
 mechanistically rather than with a model. Instead of a language model, it scores each word

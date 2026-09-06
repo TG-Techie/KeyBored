@@ -5,7 +5,7 @@
 #
 # Refuses an upload that would repeat a failure this project has already had.
 #
-#     tools/preflight.sh build/KeyBored.xcarchive/Products/Applications/KeyBored.app
+#     tools/preflight.sh build/KeyBored.xcarchive/Products/Applications/BoreKey.app
 #
 # Exits non-zero and names what is wrong. Run it between the archive and the export.
 #
@@ -27,12 +27,11 @@ set -u
 
 APP="${1:-}"
 if [ -z "$APP" ] || [ ! -d "$APP" ]; then
-  echo "usage: tools/preflight.sh <path to built KeyBored.app>" >&2
+  echo "usage: tools/preflight.sh <path to the built .app>" >&2
   exit 2
 fi
 
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-APPEX="$APP/PlugIns/KeyBoredKeyboard.appex"
 failures=0
 
 fail() {
@@ -41,6 +40,17 @@ fail() {
 }
 
 pass() { echo "  ok    $1"; }
+
+# Globbed rather than named: the product is called BoreKey and the target is called
+# KeyBoredKeyboard, and which of those names the file carries is exactly the kind of
+# thing this script exists to notice changing. There is one extension; if a second ever
+# appears this stops rather than silently checking whichever sorted first.
+set -- "$APP"/PlugIns/*.appex
+if [ "$#" -ne 1 ] || [ ! -d "$1" ]; then
+  echo "  FAIL  expected exactly one app extension in $APP/PlugIns, found $#" >&2
+  exit 1
+fi
+APPEX="$1"
 
 # `PlistBuddy` exits non-zero and prints "Does Not Exist" for a missing key, which is what
 # distinguishes an absent key from one whose value is empty. Both are failures here, but

@@ -291,32 +291,27 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
   #expect(elapsed < .seconds(8), "building the lexicon took \(elapsed)")
 }
 
-/// What the trie costs in memory, which is the budget a keyboard extension is killed for
-/// exceeding rather than warned about.
+/// How big the trie is, in the one unit a test in this suite can honestly measure.
 ///
-/// Measured as the process's own physical footprint either side of building it, which is
-/// the number iOS's jetsam looks at. The bound is loose for the same reason the timing
-/// bounds are: it is here to catch the list growing by another order of magnitude, not to
-/// police a megabyte.
-@Test func theTrieFitsInAnExtensionsMemoryBudget() {
-  func footprint() -> Double {
-    var info = task_vm_info_data_t()
-    var count = mach_msg_type_number_t(
-      MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
-    let result = withUnsafeMutablePointer(to: &info) {
-      $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
-        task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
-      }
-    }
-    return result == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : .nan
-  }
-
-  let before = footprint()
+/// The question worth asking is what the trie costs in memory, because that is the budget
+/// a keyboard extension is killed for exceeding rather than warned about. This test does
+/// not ask it, and the previous version of it — which read the process footprint either
+/// side of building the lexicon and asserted the difference was under 40 MB — could not
+/// either. swift-testing runs the whole suite in one process in randomized order, so the
+/// difference measures whatever else has run: it reported -80.7 MB on one run and
+/// +145.7 MB on the next, with the process baseline moving from 101 MB to 243 MB. An
+/// assertion of `cost < 40` passes on a negative cost, so it was green having measured
+/// nothing at all.
+///
+/// The node count is deterministic, has no such dependence, and moves for exactly the
+/// reason the footprint would: the trie's cost is roughly 161 bytes a node, so this bound
+/// catches the list growing by an order of magnitude. The megabytes are measured by
+/// `tools/footprint.swift`, in a process that does nothing else, and what is left on a
+/// real device is reported by `MemoryBudget`.
+@Test func theTrieStaysTheSizeItsWordListImplies() {
   let lexicon = EnglishLexicon.make()
-  let cost = footprint() - before
   #expect(lexicon.count > 75_000)
-  #expect(cost < 40, "the lexicon cost \(cost) MB")
-  print("lexicon footprint: \(cost) MB for \(lexicon.count) entries")
+  #expect(lexicon.nodes.count < 250_000, "the trie has \(lexicon.nodes.count) nodes")
 }
 
 @Test func matchingAWordStaysFastOnTheRealLexicon() {

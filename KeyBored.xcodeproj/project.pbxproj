@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */; };
 		0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */; };
+		0EABA5E23BFF0BFEBF9F129D /* MemoryBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE73F18C0DD7D1A3FFE2473B /* MemoryBudget.swift */; };
 		1754CC856C55487979CC6739 /* 12dicts-2of12inf-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */; };
 		17C497CFD4CD282A3328723F /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		17EB8CCFCC165AA5A2DE8914 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
@@ -31,6 +32,7 @@
 		5B24CDCD9C449C33D6E8CBF2 /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
 		6AC531056FA55E48B6E3FA7E /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */; };
 		6E65F0197ECFBABAC946012F /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
+		7284452EC93E0E4D69074382 /* MemoryBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE73F18C0DD7D1A3FFE2473B /* MemoryBudget.swift */; };
 		7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1684CD1434266B7E0D519C3 /* Branding.swift */; };
 		787BC0EB5E7F09211D931157 /* KeyboardControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */; };
 		7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
@@ -51,6 +53,7 @@
 		E42B041F2DD9210A4CDEE855 /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
 		E97B9025814D2D8173FE6A9F /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
 		F277EAFA3F7386F79B40B697 /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
+		F3A45B2E3272560A3141017F /* MemoryBudget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE73F18C0DD7D1A3FFE2473B /* MemoryBudget.swift */; };
 		F9D288D54267A98822DAA9D2 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13593DD3399D48D8AC7170D5 /* KeyboardViewController.swift */; };
 		FCA71C15C96B8311B51AA6BB /* KeyboardViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */; };
 /* End PBXBuildFile section */
@@ -112,6 +115,7 @@
 		B700D6F401A5693042A7B118 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		C10EF1A73D86BB107895805E /* Lexicon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lexicon.swift; sourceTree = "<group>"; };
 		D598C59D6809DCCF660AFAAE /* TypingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TypingSession.swift; sourceTree = "<group>"; };
+		DE73F18C0DD7D1A3FFE2473B /* MemoryBudget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryBudget.swift; sourceTree = "<group>"; };
 		E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatcherTests.swift; sourceTree = "<group>"; };
 		F374D83ED462DC894A88D770 /* KeyBored.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KeyBored.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F3ADEEC26B5744A5AD46AABA /* KeyBoredTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = KeyBoredTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -169,6 +173,7 @@
 				B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */,
 				53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */,
 				C10EF1A73D86BB107895805E /* Lexicon.swift */,
+				DE73F18C0DD7D1A3FFE2473B /* MemoryBudget.swift */,
 				7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */,
 				D598C59D6809DCCF660AFAAE /* TypingSession.swift */,
 				2253F6AB2DDCE6105A912454 /* Resources */,
@@ -354,6 +359,7 @@
 				FCA71C15C96B8311B51AA6BB /* KeyboardViewTests.swift in Sources */,
 				1D52AB0B7EB2884F1E2553B5 /* Lexicon.swift in Sources */,
 				0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */,
+				0EABA5E23BFF0BFEBF9F129D /* MemoryBudget.swift in Sources */,
 				7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */,
 				071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */,
 				55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */,
@@ -374,6 +380,7 @@
 				AD18632A574D86BB8E01C6E4 /* KeyboardGeometry.swift in Sources */,
 				5A6C13AA3CFCAC01014F7FE3 /* KeyboardView.swift in Sources */,
 				C10FF9337D6821C1B09EC69D /* Lexicon.swift in Sources */,
+				F3A45B2E3272560A3141017F /* MemoryBudget.swift in Sources */,
 				59C0041A0DED58FE22284969 /* SmartPunctuation.swift in Sources */,
 				E42B041F2DD9210A4CDEE855 /* TypingSession.swift in Sources */,
 			);
@@ -392,6 +399,7 @@
 				6AC531056FA55E48B6E3FA7E /* KeyboardView.swift in Sources */,
 				F9D288D54267A98822DAA9D2 /* KeyboardViewController.swift in Sources */,
 				C39143B6EFBBC9024B8ED488 /* Lexicon.swift in Sources */,
+				7284452EC93E0E4D69074382 /* MemoryBudget.swift in Sources */,
 				17EB8CCFCC165AA5A2DE8914 /* SmartPunctuation.swift in Sources */,
 				C9E7E76ABE8A98504113C6FE /* TypingSession.swift in Sources */,
 			);
@@ -425,6 +433,8 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.tg-techie.app.keybored";
+				PRODUCT_MODULE_NAME = KeyBored;
+				PRODUCT_NAME = "$(PRODUCT_DISPLAY_NAME)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -443,7 +453,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.tg-techie.app.KeyBoredTests";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KeyBored.app/KeyBored";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_DISPLAY_NAME).app/$(PRODUCT_DISPLAY_NAME)";
 			};
 			name = Debug;
 		};
@@ -460,7 +470,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.tg-techie.app.KeyBoredTests";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KeyBored.app/KeyBored";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/$(PRODUCT_DISPLAY_NAME).app/$(PRODUCT_DISPLAY_NAME)";
 			};
 			name = Release;
 		};
@@ -607,6 +617,8 @@
 					"@executable_path/Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.tg-techie.app.keybored";
+				PRODUCT_MODULE_NAME = KeyBored;
+				PRODUCT_NAME = "$(PRODUCT_DISPLAY_NAME)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -623,6 +635,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.tg-techie.app.keybored.keyboard";
+				PRODUCT_MODULE_NAME = KeyBoredKeyboard;
+				PRODUCT_NAME = "$(PRODUCT_DISPLAY_NAME)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -639,6 +653,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.tg-techie.app.keybored.keyboard";
+				PRODUCT_MODULE_NAME = KeyBoredKeyboard;
+				PRODUCT_NAME = "$(PRODUCT_DISPLAY_NAME)";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

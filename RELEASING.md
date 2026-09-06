@@ -21,10 +21,21 @@ Read out of an actual archive with `plutil`, not from `project.yml`:
 
     app         com.tg-techie.app.keybored
     extension   com.tg-techie.app.keybored.keyboard
-    display     BoreKey  (CFBundleDisplayName, from PRODUCT_DISPLAY_NAME)
+    products    BoreKey.app, and BoreKey.appex inside its PlugIns
+    display     BoreKey  (CFBundleDisplayName and CFBundleName, from PRODUCT_DISPLAY_NAME)
     version     0.0.2    (CFBundleShortVersionString, MARKETING_VERSION)
     build       1        (CURRENT_PROJECT_VERSION)
     minimum iOS 26.0
+
+The products are named BoreKey too, and that is not cosmetic. `CFBundleName` cannot be
+set from an Info.plist — with `GENERATE_INFOPLIST_FILE` on, Xcode writes
+`CFBundleName = $(PRODUCT_NAME)` over whatever the hand-written plist says, and there is
+no `INFOPLIST_KEY_CFBundleName` to stop it. Builds 0.0.1 through 0.0.5 all shipped
+`CFBundleName = KeyBored` because of that, which is why `PRODUCT_NAME` is now
+`$(PRODUCT_DISPLAY_NAME)` for both bundle targets. `PRODUCT_MODULE_NAME` is pinned
+beside each one, because the Swift module is not a brand: it is what `@testable import
+KeyBored` names, and the project is KeyBored. Read the archived `Info.plist` to check
+any of this, never the one in the tree.
 
 The identifiers say KeyBored and the app says BoreKey, on purpose. `KeyBored` was already
 taken as an App Store name; a bundle identifier is a separate namespace and is permanent
@@ -96,7 +107,7 @@ The recipe, on a booted simulator whose id is in `$D`:
 
     xcodebuild -scheme KeyBored -destination "platform=iOS Simulator,id=$D" \
       -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build
-    xcrun simctl install "$D" build/sim/Build/Products/Debug-iphonesimulator/KeyBored.app
+    xcrun simctl install "$D" build/sim/Build/Products/Debug-iphonesimulator/BoreKey.app
 
 Add the keyboard once per simulator — it does not appear on its own:
 
@@ -136,7 +147,7 @@ this and neither is a passing test.
 
 Between the archive and the export, run it against the built product:
 
-    tools/preflight.sh build/KeyBored.xcarchive/Products/Applications/KeyBored.app
+    tools/preflight.sh build/KeyBored.xcarchive/Products/Applications/BoreKey.app
 
 It exits non-zero and names what is wrong. **Every assertion reads the `.app` rather than the
 source**, which is the point: each failure it checks for got past a green build, and several
@@ -195,7 +206,7 @@ Export before you upload. It separates two failures that otherwise arrive as one
 the build can be signed for distribution, and whether it can reach App Store Connect. Check
 what actually signed it by asking the artefact rather than the keychain:
 
-    codesign -dvvv Payload/KeyBored.app
+    codesign -dvvv Payload/BoreKey.app
     Authority=Apple Distribution: …
 
 `security find-identity` reports the default keychain search list, which is not the same
@@ -211,10 +222,10 @@ scan, because a folder scan would take it in as a group and `actool` would never
 Verify it in the built product rather than in the build log, because a missing icon does not
 produce a warning:
 
-    ls build/KeyBored.xcarchive/Products/Applications/KeyBored.app
+    ls build/KeyBored.xcarchive/Products/Applications/BoreKey.app
     Assets.car   AppIcon60x60@2x.png   AppIcon76x76@2x~ipad.png
 
-    plutil -p …/KeyBored.app/Info.plist | grep CFBundleIconName
+    plutil -p …/BoreKey.app/Info.plist | grep CFBundleIconName
     "CFBundleIconName" => "AppIcon"
 
 App Store Connect rejects an upload from an app with no icon, so this has to be true before

@@ -79,6 +79,13 @@ final class KeyboardViewController: UIInputViewController {
     controller.onChange = { [weak self] in self?.render() }
     controller.hasGlobeKey = needsInputModeSwitchKey
 
+    // Written once per load, after the lexicon is built, because the lexicon is the
+    // largest thing this extension allocates and the interesting question is what is
+    // left afterwards. A simulator answers 0 MB remaining and that is not a failure —
+    // it is the simulator declining to enforce a limit it does not have. Only a real
+    // phone answers this one. See `MemoryBudget`.
+    MemoryBudget.log("keyboard loaded")
+
     // An extension does not inherit the stock keyboard's metrics; it declares its own.
     // Matching them is therefore something this project does explicitly, from the
     // measurements in SPEC.md Appendix A.
