@@ -53,20 +53,34 @@ private func type(_ characters: String, on controller: KeyboardController) {
 /// had been measured once on a 430pt phone and written down as if it were universal.
 @Test func theKeyboardIsAsTallAsStock() {
   #expect(abs(StockMetrics.bottomPadding - 22.0 / 3) < 0.01)
-  #expect(abs(StockMetrics.suggestionBarHeight - 156.0 / 3) < 0.01)
+
+  // The three vertical bands above row 0, and the arithmetic that has to hold between
+  // them. 0.0.5 shipped with the plate-relative 156 used as the view-relative offset, so
+  // its first row sat 51px below stock's on a real phone. The relation is asserted rather
+  // than the value, because either number alone reads as correct.
+  #expect(abs(StockMetrics.stockPlateToFirstRow * 3 - 156) < 0.01)
+  #expect(abs(StockMetrics.suggestionBarHeight * 3 - 104) < 0.01)
+  #expect(abs(StockMetrics.systemBandAboveInputView * 3 - 52) < 0.01)
+  #expect(
+    abs(StockMetrics.suggestionBarHeight + StockMetrics.systemBandAboveInputView
+      - StockMetrics.stockPlateToFirstRow) < 0.01)
+
+  // Row 0 is laid out against the band this keyboard owns, never against stock's plate.
+  #expect(KeyboardGeometry(width: 430).keys[0].frame.minY == StockMetrics.suggestionBarHeight)
 
   // Stock on a 402pt phone, measured plate-top to plate-bottom in a 1206×2622 capture
-  // of a Contacts search field, 2026-09-05: 1617 to 2410, so 793px.
+  // of a Contacts search field, 2026-09-05: 1617 to 2410, so 793px. That is the plate,
+  // so it carries the system's band; the view this keyboard asks for is 52px less.
   //   156 strip + 4×129 caps + 3×33 gaps + 22 padding = 793
-  #expect(abs(StockMetrics.totalHeight(forWidth: 402) * 3 - 793) < 1)
+  #expect(abs(StockMetrics.totalHeight(forWidth: 402) * 3 - (793 - 52)) < 1)
   #expect(abs(StockMetrics.rowHeight(forWidth: 402) * 3 - 129) < 0.01)
   #expect(abs(StockMetrics.rowHeight(forWidth: 390) * 3 - 129) < 0.01)
 
   // And on the two large phones, where the caps are 6px taller:
-  //   156 + 4×135 + 3×33 + 22 = 817
+  //   156 + 4×135 + 3×33 + 22 = 817 of plate, less the system's 52
   #expect(abs(StockMetrics.rowHeight(forWidth: 430) * 3 - 135) < 0.01)
   #expect(abs(StockMetrics.rowHeight(forWidth: 440) * 3 - 135) < 0.01)
-  #expect(abs(StockMetrics.totalHeight(forWidth: 440) * 3 - 817) < 1)
+  #expect(abs(StockMetrics.totalHeight(forWidth: 440) * 3 - (817 - 52)) < 1)
 
   // The row pitch follows from the two: 162px on a small phone, 168 on a large one, and
   // the gap between rows is the same 33 on both.

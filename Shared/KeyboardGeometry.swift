@@ -120,16 +120,47 @@ public enum StockMetrics {
   /// do not scale" turned out to be only half true.
   public static let rowGap: CGFloat = 33 / 3
 
-  /// The band above the first key row, which stock reserves whether or not it has
-  /// anything to put in it.
+  /// **Three numbers, not one, and conflating two of them shipped a defect.**
   ///
-  /// 156px at 3x, measured 2026-09-05 as plate-top-to-first-row on the stock keyboard in
-  /// a Contacts search field on three simulators — 390pt, 402pt and 440pt wide — where it
-  /// came out at exactly 156 on all three. It was 104 here, which is the strip a custom
-  /// keyboard draws inside its own input view; the missing 52 is the band iOS draws above
-  /// that view, and counting only our half is what made this keyboard sit low against
-  /// stock in a side-by-side.
-  public static let suggestionBarHeight: CGFloat = 156 / 3
+  /// The band above the first key row is measured from the top of the *plate* — the
+  /// rounded container a person sees — and a custom keyboard does not own all of it. iOS
+  /// draws a band of its own above the input view the extension is given, so the strip
+  /// this keyboard lays out inside its own view is the stock band minus that. Writing the
+  /// plate-relative figure and the view-relative figure as one constant counts the
+  /// system's band twice, and that is exactly what 0.0.5 shipped: on Jonah's phone its
+  /// first key row sat 51px below stock's, measured off a stock-and-BoreKey screenshot
+  /// pair in the same iMessage field on 2026-09-06, anchored on the globe strip iOS draws
+  /// below both. Everything else on that pair was identical — caps 109px wide on 18px
+  /// gaps at 20px margins, cap height 135, row gap 33, row pitch 168, space 615 against
+  /// stock's 616, return 300 against 300.
+  ///
+  /// Recorded because the wrong answer is re-derivable from the right measurement: an
+  /// earlier note here read the 51px as a defect that a previous commit had *fixed*,
+  /// when that commit is what introduced it by changing this constant from 104 to 156 for
+  /// both uses at once. SPEC.md Appendix A.17.
+
+  /// What stock reserves above its first key row, from the top of the plate: 156px at 3x.
+  ///
+  /// Measured 2026-09-05 in a Contacts search field on three simulators — 390pt, 402pt
+  /// and 440pt wide — where it came out at exactly 156 on all three. **This is a
+  /// description of stock, not a layout value**: nothing positions a key against it,
+  /// because this keyboard's own view does not begin at the top of the plate.
+  public static let stockPlateToFirstRow: CGFloat = 156 / 3
+
+  /// The band iOS draws above a custom keyboard's input view, which the extension neither
+  /// draws in nor is given: 52px at 3x.
+  ///
+  /// Measured on the 0.0.5 pair above. That build laid its first row out 156px below the
+  /// top of its own view and the row landed 206px below the top of the plate, so the band
+  /// between the two is 50px, and 52 is where the arithmetic below puts it. The two agree
+  /// to within the pixel or so that thresholding a rounded corner costs.
+  public static let systemBandAboveInputView: CGFloat = stockPlateToFirstRow - suggestionBarHeight
+
+  /// The strip this keyboard draws above its own first key row, inside its own input
+  /// view, and the offset row 0 is laid out at: 104px at 3x.
+  ///
+  /// This is the one of the three that positions anything.
+  public static let suggestionBarHeight: CGFloat = 104 / 3
 
   /// **The cap height depends on the phone, and there are two of them.**
   ///
@@ -194,8 +225,11 @@ public enum StockMetrics {
 
   /// Total height the extension asks for, excluding the home-indicator safe area.
   ///
-  /// Stock on a 402pt phone: 156 + 4×129 + 3×33 + 22 = 793px, and the plate really does
-  /// run from 1617 to 2410 in a 2622px capture.
+  /// This is the height of the input view, so it counts `suggestionBarHeight` and not
+  /// `stockPlateToFirstRow`: the band iOS draws above the view is not the extension's to
+  /// ask for. Stock's whole plate on a 402pt phone is 156 + 4×129 + 3×33 + 22 = 793px and
+  /// really does run from 1617 to 2410 in a 2622px capture, which is that same sum with
+  /// the system's band included — the plate, not the view.
   public static func totalHeight(forWidth width: CGFloat) -> CGFloat {
     suggestionBarHeight + 4 * rowHeight(forWidth: width) + 3 * rowGap + bottomPadding
   }

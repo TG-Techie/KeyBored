@@ -60,10 +60,13 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
   let geometry = KeyboardGeometry(width: referenceWidth)
   let q = geometry.key(for: "q")!
   let a = geometry.key(for: "a")!
-  // Row pitch 168px on a 430pt phone, and the top row starts 156px below the plate top:
-  // 1617 to 1773 measured on a simulator, and 1807 to 1963 on the 430pt reference.
+  // Row pitch 168px on a 430pt phone. The top row starts 156px below the top of the
+  // *plate* — 1617 to 1773 measured on a simulator, 1807 to 1963 on the 430pt reference —
+  // but a key's frame is in the keyboard's own view, which begins 52px below the plate
+  // top, so row 0 sits at 104 there. Asserting 156 against a frame is what 0.0.5 shipped.
   #expect(abs((a.frame.minY - q.frame.minY) * 3 - 168) < 0.5)
-  #expect(abs(q.frame.minY * 3 - 156) < 0.5)
+  #expect(abs(q.frame.minY * 3 - 104) < 0.5)
+  #expect(abs((q.frame.minY + StockMetrics.systemBandAboveInputView) * 3 - 156) < 0.5)
 }
 
 // MARK: - Neighbourhoods
