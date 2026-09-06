@@ -455,4 +455,42 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   him to overturn. The preview at 402pt is unmeasured, and multi-touch at real typing speed
   has still never been exercised on a device.
 
-The tree is at 0.0.9 build 1, which is spent. Bump before archiving again.
+- **0.0.10 build 1.** Uploaded at 11:35:03 EDT on 2026-09-06 from commit `5da46b0` with a
+  clean tree, 94 tests passing. Timestamp read off the export log, not from memory: the run
+  started 11:33:45 and printed `Upload succeeded.` at 11:35:03, then `** EXPORT SUCCEEDED **`.
+  Three changes.
+
+  **An exact tie in the commit rule keeps what the user typed.** The rule compared the best
+  candidate against the slack with `<=`, so a candidate that tied exactly replaced the
+  typing. A tie means the arithmetic cannot separate the two and the two outcomes are not
+  equally cheap to undo, so the typing wins. Measured at dead-centre taps, where
+  `literalCost` is exactly zero and the slack is `0.5 * tapCount` and nothing else: eleven of
+  thirty-one deliberate non-words were being rewritten on space, and six of those were exact
+  ties — including `jonah` going in as `josh` and the `isnthere` fixture going in as
+  `anthers`. All six now stand. SPEC.md A.22.
+
+  **A key preview leans inward rather than being sliced by the keyboard's edge.** The bulb is
+  two thirds wider than a cap, so one centred over `q` started 16px left of the keyboard's
+  own margin — where an extension cannot draw — and the input view cut it flat. Stock's sits
+  fully inside with its left edge on the cap's. Exactly two letters lean now, `q` and `p`, by
+  11.5px each. SPEC.md A.23.
+
+  **The 402pt differential, which found the second of those.** Every row band on all three
+  planes matches stock exactly and every cap within 1px, on the same measurement that showed
+  a 37px row-1 offset a day earlier. The host was Safari's URL field rather than Contacts.
+
+  **Verified in the hand at 402pt in both appearances**, which is the first time this
+  keyboard has been exercised at that width at all: `hi there` types correctly in light and
+  `hi there hi ` in dark, the letters are legible in both, and the space bar reads
+  `BoreKey 0.0.10`.
+
+  **Not in this build, and named so it is not mistaken for done:** the letters plane's space
+  bar is 549px against stock's 545 and pushes the period key 2px right — left out as
+  structural and recorded in A.23, and it goes to Jonah with the period-key decision it is
+  related to. The candidate bar is drawn in every non-secure field including Safari's URL
+  field, where stock draws none; `keyboardType` is read only to decide the period key and is
+  not carried in `DocumentTraits`, so nothing else can consult it. `isnthere` still cannot
+  become `is there`. Multi-touch at real typing speed has still never been exercised on a
+  device.
+
+The tree is at 0.0.10 build 1, which is spent. Bump before archiving again.
