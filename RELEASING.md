@@ -493,4 +493,34 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   become `is there`. Multi-touch at real typing speed has still never been exercised on a
   device.
 
-The tree is at 0.0.10 build 1, which is spent. Bump before archiving again.
+- **0.0.11 build 1.** Uploaded at 13:17:12 EDT on 2026-09-06 from commit `9ea27c4` with a
+  clean tree, 97 tests passing. Timestamp read off the export log, not from memory: the run
+  started 13:16:07 and printed `Upload succeeded.` at 13:17:12, then `** EXPORT SUCCEEDED **`.
+  Two changes, both of them things Jonah reported within four minutes of each other.
+
+  **A word boundary commits the word it ends.** Reported at 12:59: a comma at the end of a
+  word, then a space, and the correction that would otherwise have fired does not. The comma
+  was the report and the boundary was the defect — `handle` had two ways to end a word and
+  picked between them by hand at each case, and the comma, every digit and symbol on the
+  numbers plane, the address-field period key and the plane key all picked the one that
+  discarded the pending correction. Reproduced in two taps at 402pt and fixed by naming the
+  two verbs apart. SPEC.md A.27.
+
+  **No drop shadow under the caps.** Reported at 12:56. One declaration in `KeyCap.init`
+  drew it under every key and nothing else in the project sets a shadow property. Stock
+  draws none, established by scanning down a column through a cap's bottom edge: stock's
+  intermediate pixels sit between cap and plate in both appearances, ours sat below the
+  plate in both, and only a shadow can do that. SPEC.md A.28.
+
+  **Verified in the hand at 402pt in both appearances**, in Contacts' search field: `hrllo`
+  then a comma gives `hello,`, and the cap edges read `#FFFFFF` → `#F1F2F4` → plate in light
+  and `#3D3D3D` → `#2B2B2B` → plate in dark, which is stock's profile.
+
+  **Not in this build:** the slack formula still overwrites five words it should leave
+  (`iphone`, `keybored`, `sry`, `np`, `pw`); `isnthere` still cannot become `is there`; the
+  bottom row is the same in every field kind and has no emoji key; there are no long-press
+  alternates and no space-bar trackpad. Also measured and not acted on: stock does not
+  autocorrect in Contacts' search field and this keyboard does, because `DocumentTraits`
+  never reads `autocorrectionType`.
+
+The tree is at 0.0.11 build 1, which is spent. Bump before archiving again.
