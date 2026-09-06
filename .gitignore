@@ -19,3 +19,7 @@ UploadOptions.plist
 # Built from tools/tap.swift, per RELEASING.md's "type with it" step. A compiled binary,
 # not a source file.
 /tap
+
+# The export destination RELEASING.md uses. An exported ipa embeds the provisioning
+# profile, and that carries a team id, so it must not reach this public repository.
+out/

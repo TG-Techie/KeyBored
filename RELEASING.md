@@ -331,4 +331,17 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   1500ms hold on delete emptying a ten-character field. The exported ipa was checked with
   `codesign -dvvv` for an `Apple Distribution` authority before it went up.
 
-The tree is at 0.0.4 build 1, which is spent. Bump before archiving again.
+- **0.0.5 build 1.** Uploaded at 03:59 EDT on 2026-09-06 from commit `65c1f13` with a clean
+  tree. What it carries: the address field's period key, the dimmed return key, the fix for
+  the flickering suggestion, the anchored-word fix, the never-replace-a-real-word commit
+  guard, and the 75,646-word `2of12inf` list in place of the 19k lemma list. The evidence
+  behind it, in the order it was taken: 78 tests passing; `tools/preflight.sh` passing
+  against the built product, including its two new checks that the bundled word list named
+  in `EnglishLexicon.swift` is present in both the app and the appex; the period key
+  verified on a device in light and dark; the flicker fix verified by a mid-press screen
+  capture with the press held open; the anchor fix verified by typing into the middle of an
+  existing word and watching the bar stay empty and the text survive; `dont` still
+  correcting to `don't`. The exported ipa was checked with `codesign -dvvv` for an
+  `Apple Distribution` authority before it went up.
+
+The tree is at 0.0.5 build 1, which is spent. Bump before archiving again.
