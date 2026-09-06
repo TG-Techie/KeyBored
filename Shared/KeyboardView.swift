@@ -528,19 +528,23 @@ final class KeyboardView: UIView {
   /// input view, so the keyboard stood 34pt taller than stock with an empty band above
   /// the bar — the shape of the defect he had reported that morning. SPEC.md A.19.
   ///
-  /// So row 0's preview is pushed down until it fits, which puts it over the bar. It is
-  /// opaque and in front, so it covers the part of a word it sits on and leaves the rest
-  /// legible. **It used to hide the whole slot underneath it, and that was the flicker** —
-  /// a suggestion blinking out and back once per top-row keystroke, reported 2026-09-05
-  /// and visible in `IMG_8416` as a blank middle cell in the one frame captured mid-press.
-  /// Covering part of a word for the length of a press is the smaller wrong.
+  /// So row 0's preview rises as far as there is room and no further. **The whole frame
+  /// used to be pushed down instead**, which kept the shape's proportions and moved its
+  /// foot off the key it belongs to: on the top row it hung a third of a cap below its own
+  /// letter, into the row beneath. A preview is anchored to its key at the bottom and free
+  /// at the top, so the top is what gives.
+  ///
+  /// It still ends up over the suggestion bar. It is opaque and in front, so it covers the
+  /// part of a word it sits on and leaves the rest legible. **It used to hide the whole
+  /// slot underneath it, and that was the flicker** — a suggestion blinking out and back
+  /// once per top-row keystroke, reported 2026-09-05 and visible in `IMG_8416` as a blank
+  /// middle cell in the one frame captured mid-press. Covering part of a word for the
+  /// length of a press is the smaller wrong.
   private func previewFrame(above key: Key) -> CGRect {
     let cap = key.frame
     let width = cap.width * StockMetrics.previewBulbWidthInCaps
-    let top = cap.minY - cap.height * StockMetrics.previewRiseInCaps
-    let frame = CGRect(
-      x: cap.midX - width / 2, y: top, width: width, height: cap.maxY - top)
-    return frame.minY < 0 ? frame.offsetBy(dx: 0, dy: -frame.minY) : frame
+    let top = max(0, cap.minY - cap.height * StockMetrics.previewRiseInCaps)
+    return CGRect(x: cap.midX - width / 2, y: top, width: width, height: cap.maxY - top)
   }
 
   /// What a point on this keyboard means. Every touch resolves to exactly one of these,
