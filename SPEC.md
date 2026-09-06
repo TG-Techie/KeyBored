@@ -527,6 +527,36 @@ fresh, shifted keyboard. Fixture realism is not decoration. It is what lets a te
 something nobody was looking for. Prefer fixtures that do what a person does over fixtures
 that are convenient to assert against.
 
+### 8.2 A label's frame is not where its ink is
+
+Recorded because it has now put text in the wrong place twice in one morning, in two
+unrelated views, and both times the code read as though it were correct.
+
+A `UILabel` lays out a *line box*: ascender, descender and leading, sized to the font
+rather than to the characters. The glyphs sit inside it, off-centre, at a position that
+depends on which characters they are. So neither of the two things you naturally do with a
+label puts its ink where you meant:
+
+- **Centring the label does not centre the glyph.** The key preview's letter was centred in
+  the bulb and drew 15px above where stock's does, because a lowercase `a` occupies the
+  x-height band and the line box reserves room for an ascender and a descender it does not
+  use. The fix is not an offset: the letter is centred in a box that was *measured*, and
+  the box is a constant of its own with no relationship to any part of the shape.
+- **Insetting the label from an edge does not inset the glyph.** The space bar's corner
+  mark was placed with its frame's bottom at stock's 18px inset and drew 10px high — the
+  descender, which "BoreKey 0.0.9" spends on its `y` and stock's single `A` does not spend
+  at all. The fix is to anchor the *baseline*: the frame's top goes at
+  `edge - inset - font.ascender`.
+
+**The general rule: if a number was measured off ink, it has to be applied to ink.** A
+measurement taken from a screenshot is a statement about glyphs, and handing it to a label's
+frame silently reinterprets it as a statement about line boxes. The two differ by the
+font's own metrics, which is why the error is a plausible-looking handful of pixels rather
+than something obviously wrong.
+
+The preview's letter is in Appendix A.19 and the space bar's mark in A.21, both with
+the before-and-after positions.
+
 ---
 
 ## 9. What exists, and what it was measured to do
@@ -1889,6 +1919,47 @@ character and by the rule above should be scored. It is not, for now, because it
 is not a point in any word's constellation and no lexicon entry contains a period, so
 scoring it would only let a tap near it be read as one. A.14 has the original reasoning.
 Recorded as a decision rather than an omission, and open to being overturned.
+
+### A.21 — the faint mark in the corner of stock's space bar
+
+Stock's space bar is blank except for a single small letter in its bottom-right corner.
+Measured on a 430pt phone at 3x in dark appearance, in the same Contacts field as
+everything else in this appendix, with the space bar at x 337-952 and y 2421-2555:
+
+| | |
+|---|---|
+| glyph bounding box | x 920-934, y 2510-2537 |
+| cap height | 28px, which is 13pt at SF's cap-height ratio |
+| inset from the right edge | 18px |
+| inset from the bottom edge, to the baseline | 18px |
+| strongest pixel | `#787878` on a `#3D3D3D` cap |
+
+The colour is not a grey that had to be sampled and stored: white at alpha 0.30 over
+`#3D3D3D` is `#777777`, one value from the measurement, and white is what the caps already
+letter with. So the mark is the key text colour at 0.30 and it follows the appearance for
+free.
+
+**What this keyboard puts there is not what stock puts there.** Stock's mark is a single
+letter — the language initial. This draws `BoreKey 0.0.9`, the name and the version, which
+was Jonah's ask on 2026-09-06 at 08:30: "you could put the keyboard name and version of the
+space key like how iOS does for 'English (US)'".
+
+**And the feature he named is probably a different one.** The string iOS renders as
+`English (US)` is the *transient centred* label shown when the input mode changes, not the
+persistent corner initial. So this matches the position and the permanence of one feature
+while carrying the content of another. The reason is that a permanent label across the
+middle of the space bar would be the first thing on this keyboard that does not look like
+stock, and stock's space bar is blank in the middle — but that is a judgment against the
+plain reading of his words, and it is recorded here as one. The transient label has not
+been captured: three attempts lost the keyboard to a mis-aimed tap before the capture, so
+nothing about its size, duration or fade is measured.
+
+**The inset is to the baseline, and getting that wrong cost the second instance of section
+8.2.** Placing the label's frame with its bottom at the 18px inset drew the text 10px high,
+the descender that `BoreKey 0.0.9` spends on its `y` and stock's `A` does not spend at all.
+Anchoring the frame's top at `bounds.maxY - inset - font.ascender` puts our `B` at
+2511-2538 against stock's `A` at 2510-2537.
+
 
 ## Appendix B — sources
 
