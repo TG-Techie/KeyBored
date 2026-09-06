@@ -36,6 +36,7 @@
 		7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1684CD1434266B7E0D519C3 /* Branding.swift */; };
 		787BC0EB5E7F09211D931157 /* KeyboardControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */; };
 		7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
+		81A204257341AF3AB57DAF4F /* DeadZoneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A342AE05DB3B619B9E775433 /* DeadZoneTests.swift */; };
 		83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
 		87DEF742BBA53BA8982A3747 /* HostIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */; };
@@ -109,6 +110,7 @@
 		9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostIntegrationTests.swift; sourceTree = "<group>"; };
 		A1684CD1434266B7E0D519C3 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		A2288684F8F59D147F102B5C /* KeyBoredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredApp.swift; sourceTree = "<group>"; };
+		A342AE05DB3B619B9E775433 /* DeadZoneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeadZoneTests.swift; sourceTree = "<group>"; };
 		A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersionTests.swift; sourceTree = "<group>"; };
 		AF7D44C12690E9BB1E3E55AD /* KeyboardGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardGeometry.swift; sourceTree = "<group>"; };
 		B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardView.swift; sourceTree = "<group>"; };
@@ -185,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				1B064B3FB2291087F41E09E7 /* BrandingTests.swift */,
+				A342AE05DB3B619B9E775433 /* DeadZoneTests.swift */,
 				9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */,
 				FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */,
 				6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */,
@@ -348,6 +351,7 @@
 				7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */,
 				3A2E003CE408A01E219BB967 /* BrandingTests.swift in Sources */,
 				846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */,
+				81A204257341AF3AB57DAF4F /* DeadZoneTests.swift in Sources */,
 				4FEE6875BD847E19741BC7B8 /* EnglishLexicon.swift in Sources */,
 				87DEF742BBA53BA8982A3747 /* HostIntegrationTests.swift in Sources */,
 				83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */,

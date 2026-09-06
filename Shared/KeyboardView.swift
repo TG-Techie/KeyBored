@@ -84,6 +84,9 @@ final class KeyboardView: UIView {
     super.init(frame: frame)
     setUpBar()
     setUpPreview()
+    // Without this UIKit hands this view the first finger of a multi-touch sequence and
+    // discards every other one, which at typing speed is most of them. See `touchesBegan`.
+    isMultipleTouchEnabled = true
     // Inert until a host asks for it. A control with no targets would still swallow the
     // touch, and the container app's try-it keyboard has no input modes to list.
     globeControl.isUserInteractionEnabled = false
@@ -380,10 +383,10 @@ final class KeyboardView: UIView {
       label.font = .systemFont(ofSize: 17)
       label.textColor = Self.barTextColor
       label.textAlignment = .center
-      label.isUserInteractionEnabled = true
-      label.tag = index
-      label.addGestureRecognizer(
-        UITapGestureRecognizer(target: self, action: #selector(bubbleTapped(_:))))
+      // No gesture recognizer and no interaction: a bar slot is resolved from the touch's
+      // coordinate by `target(at:)`, the same way a key is. A label that took its own
+      // touches would be a second opinion about what a point means, and the whole reason
+      // this view hit-tests itself is that there can only be one. See `hitTest`.
       bubbleLabels.append(label)
       barStack.addArrangedSubview(label)
 
@@ -449,15 +452,16 @@ final class KeyboardView: UIView {
     cap(for: role)?.label.text ?? ""
   }
 
-  @objc private func bubbleTapped(_ recognizer: UITapGestureRecognizer) {
+  /// The word offered in a bar slot, or nothing when that slot is empty.
+  private func bubbleText(_ slot: Int) -> String? {
     let text: String?
-    switch recognizer.view?.tag ?? -1 {
+    switch slot {
     case 0: text = bar.literal
     case 1: text = bar.primary
     default: text = bar.secondary
     }
-    guard let text, !text.isEmpty else { return }
-    onBubble?(text)
+    guard let text, !text.isEmpty else { return nil }
+    return text
   }
 
   // MARK: - Touches
@@ -502,18 +506,137 @@ final class KeyboardView: UIView {
     return frame.minY < 0 ? frame.offsetBy(dx: 0, dy: -frame.minY) : frame
   }
 
-  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-    guard let touch = touches.first, let geometry,
-      let key = geometry.hitTest(touch.location(in: self))
-    else { return }
-    keyViews[key.id]?.backgroundColor = Self.pressedKeyColor
-    if key.role == .delete { startDeleteRepeat(for: key) }
-    if let letter = key.letter {
-      preview.text = isShifted ? String(letter).uppercased() : String(letter)
-      preview.frame = previewFrame(above: key)
-      preview.isHidden = false
-      bringSubviewToFront(preview)
+  /// What a point on this keyboard means. Every touch resolves to exactly one of these,
+  /// once, and everything the touch does follows from it.
+  private enum Target {
+    case key(Key)
+    case bubble(Int)
+  }
+
+  /// Which target each finger currently down is holding, so that several can be down at
+  /// once and each is released as the thing it pressed.
+  private var held: [ObjectIdentifier: Target] = [:]
+
+  /// The finger the delete repeat belongs to, so that lifting a different finger does not
+  /// stop it and lifting this one does.
+  private var deleteRepeatTouch: ObjectIdentifier?
+
+  /// **The whole keyboard is one touch target, and this is why.**
+  ///
+  /// UIKit was not delivering touches that landed in the gaps between caps. Measured on a
+  /// simulator on 2026-09-06 with a probe in `touchesBegan`: taps across the q/w boundary
+  /// at x = 40, 42, 44 and 46 points produced two `began` events, at 40 and at 46, and
+  /// nothing at all at 42 and 44 — which is exactly the 6pt the drawn caps leave between
+  /// them. Nine such gaps per row, plus the gaps between rows. Reported the same morning
+  /// as "dead zones where tapping doesn't trigger a key ... Every tap should trigger a key
+  /// press", and it produced no character, no preview and no highlight, because all three
+  /// hang off a touch that never arrived.
+  ///
+  /// The resolution was never the problem: `KeyboardGeometry.hitTest` assigns every
+  /// coordinate in the keyboard to a key, and `everyPointOnTheKeyboardResolvesToAKey`
+  /// sweeps every point at 1pt spacing to prove it. The problem was that UIKit decided
+  /// which view should hear about the touch before any of that ran.
+  ///
+  /// So this view stops asking. It claims every point inside its own bounds, and no cap,
+  /// spacer, label, stack view or anything added to it later can take one — which is the
+  /// difference between a keyboard that currently has no dead zones and one that cannot
+  /// have them. The globe is the single exception and it is a real one: the keyboard list
+  /// is only reachable through `handleInputModeList(from:with:)`, which wants the touch
+  /// event UIKit hands a `UIControl`, so that control keeps the touches over its own cap.
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    guard bounds.contains(point) else { return nil }
+    if globeControl.isUserInteractionEnabled, globeControl.frame.contains(point) {
+      return globeControl
     }
+    return self
+  }
+
+  /// The one place a coordinate becomes a meaning.
+  ///
+  /// Nothing else in this view is allowed to ask whether a point is inside a rectangle.
+  /// That is the invariant behind his rule: a tap cannot resolve to a key and also fail to
+  /// light it or preview it, because the resolution happens once and the lighting, the
+  /// preview and the insertion are all downstream of the same answer.
+  private func target(at point: CGPoint) -> Target? {
+    if point.y < StockMetrics.suggestionBarHeight {
+      let slot = min(2, max(0, Int(point.x / (bounds.width / 3))))
+      return .bubble(slot)
+    }
+    return geometry?.hitTest(point).map(Target.key)
+  }
+
+  /// **Every finger gets a target. This view used to answer only the first one.**
+  ///
+  /// `isMultipleTouchEnabled` defaults to false, and UIKit's documented behaviour for a
+  /// view with it off is to deliver the first touch of a multi-touch sequence and ignore
+  /// every other touch entirely — they are never reported, in any phase. Typing at speed
+  /// is a multi-touch sequence almost continuously: the next finger lands before the last
+  /// one lifts. So at speed this keyboard silently discarded taps, and the faster the
+  /// typing the more it discarded.
+  ///
+  /// The evidence is what his phone produced while he typed "No: we do need an emoji key":
+  ///
+  ///     No; we ill med n moo key uh thiskeyboars nhchbdhHhhhf
+  ///
+  /// and, typing faster and crosser a few minutes later:
+  ///
+  ///     Oh f*tho codes goon to b a itaowhen rvowtsisnt i
+  ///
+  /// The lost `a` of "an", the lost `e` of "need", the lost space of "this keyboard" are
+  /// taps that were never delivered. What is left is a mangled literal, and the corrector
+  /// then rewrites it into real words — "need" to "med", "do" to "ill" — so the dropped
+  /// taps and the bad corrections he reported the night before are one defect and not two.
+  /// The second sample is much the heavier of the two, which is what loss rising with
+  /// typing speed looks like; two samples is an observation and not a measurement.
+  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    for touch in touches {
+      guard let target = target(at: touch.location(in: self)) else { continue }
+      held[ObjectIdentifier(touch)] = target
+      press(target, touch: touch)
+    }
+  }
+
+  override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    for touch in touches {
+      release(touch)
+      guard let target = target(at: touch.location(in: self)) else { continue }
+      switch target {
+      case .key(let key):
+        // The point is passed on untouched. Rounding it to the key here would throw away
+        // the only signal the matcher runs on.
+        onKey?(key, touch.location(in: self))
+      case .bubble(let slot):
+        if let text = bubbleText(slot) { onBubble?(text) }
+      }
+    }
+    if held.isEmpty { preview.isHidden = true }
+  }
+
+  override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+    for touch in touches { release(touch) }
+    if held.isEmpty {
+      preview.isHidden = true
+      // A cancellation can arrive for a touch this view never recorded, so the whole
+      // plate is put back rather than only the keys it remembers holding down.
+      for key in geometry?.keys ?? [] {
+        keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
+      }
+    }
+  }
+
+  /// Everything a finger going down does, in one place.
+  private func press(_ target: Target, touch: UITouch) {
+    guard case .key(let key) = target else { return }
+    keyViews[key.id]?.backgroundColor = Self.pressedKeyColor
+    if key.role == .delete, deleteRepeatTouch == nil {
+      deleteRepeatTouch = ObjectIdentifier(touch)
+      startDeleteRepeat(for: key)
+    }
+    guard let letter = key.letter else { return }
+    preview.text = isShifted ? String(letter).uppercased() : String(letter)
+    preview.frame = previewFrame(above: key)
+    preview.isHidden = false
+    bringSubviewToFront(preview)
   }
 
   /// Repeats the delete while the key is held. The point reported is the key's own
@@ -555,24 +678,17 @@ final class KeyboardView: UIView {
     deleteRepeat = nil
   }
 
-  override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-    preview.isHidden = true
-    stopDeleteRepeat()
-    guard let touch = touches.first, let geometry else { return }
-    let point = touch.location(in: self)
-    guard let key = geometry.hitTest(point) else { return }
-    keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
-    // The point is passed on untouched. Rounding it to the key here would throw away
-    // the only signal the matcher runs on.
-    onKey?(key, point)
-  }
-
-  override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-    preview.isHidden = true
-    stopDeleteRepeat()
-    guard let geometry else { return }
-    for key in geometry.keys {
+  /// Un-presses whatever this finger was holding and gives up its delete repeat. The key
+  /// released is the one the finger went *down* on, which is not always the one it comes
+  /// up over: a finger that slides between keys leaves the first one lit otherwise.
+  private func release(_ touch: UITouch) {
+    let id = ObjectIdentifier(touch)
+    if case .key(let key)? = held.removeValue(forKey: id) {
       keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
+    }
+    if deleteRepeatTouch == id {
+      deleteRepeatTouch = nil
+      stopDeleteRepeat()
     }
   }
 
