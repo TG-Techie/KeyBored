@@ -2115,6 +2115,55 @@ keyboard than above stock's. Whether that is a difference between the two keyboa
 simulator's predictive-text setting cannot be told from a screenshot, and was not chased.
 
 
+### A.24 — what stock does in each kind of field
+
+`keyboardType` was read once, to decide the period key, and then thrown away. The comment on
+`wantsPeriodKey` said so plainly: `.webSearch` is the only kind that was measured and
+everything else is a guess returning false. Meanwhile the candidate bar is suppressed by one
+condition and it does not mention the field's kind at all —
+`traits.isSecure || !word.isAnchored`, `KeyboardController.swift:531`. **So this keyboard
+draws a candidate bar in every non-secure field, and stock does not.**
+
+Measured on an iPhone 17 Pro simulator at 402pt, dark appearance, 2026-09-06. Each field is
+named by the app that provides it, because the kind cannot be read off stock — only off our
+own probe build, which is how `.webSearch` was established for Safari's address bar.
+
+| field | candidate bar | bottom row |
+|---|---|---|
+| Messages, the iMessage field (`.default`) | **yes** — `I \| The \| I'm` | `123 \| space \| return` |
+| Safari, the address bar (`.webSearch`) | no | `123 \| space \| . \| →` |
+| Contacts, `add url` (`.URL`) | no | `123 \| . \| / \| .com \| return` — **no space bar** |
+| Contacts, `add email` (`.emailAddress`) | no | `123 \| space \| @ \| . \| return` |
+| Contacts, `add phone` (`.phonePad`) | no | a 3x4 numeric pad, no letters and no globe key |
+
+**The first row settles a question that was flagged as unanswerable from a screenshot.**
+A.23 recorded that stock drew no bar in Safari's URL field and said it could not be told from
+the simulator's predictive-text setting. Messages shows a bar on the same device in the same
+session, so predictive text is on and **stock's silence in the URL field is a decision about
+the field, not a setting.** The 80px of host toolbar our unconditional bar displaces is a
+defect with a named cause.
+
+**The bottom row is a bigger difference than the bar.** `.URL` has no space bar at all —
+`123`, `.`, `/`, `.com`, return — and `.emailAddress` narrows the space bar to make room for
+`@` and `.`. So "does this field get a period key" is not the shape of the question; the
+shape is "what bottom row does this field get", and the period key is one answer among four.
+Nothing here is implemented.
+
+**The information was already in the process and we discarded it.** That is the fixable
+part, and it says what the change is: the field's kind belongs in `DocumentTraits`, and both
+the bar and the bottom row read it there. A second `keyboardType` read beside the first would
+leave the two able to disagree about what field this is, which is the patch AGENTS.md
+forbids.
+
+**Also measured, and a gap rather than a defect.** A three-second hold on `g` opens stock's
+accent picker — `g ğ ġ` on a raised row, with the held key highlighted in blue. Ours draws
+the key preview for as long as the finger is down and never offers an alternate. No
+long-press alternates exist in this keyboard at all.
+
+**Not reached.** `.decimalPad` and `.twitter`; no field of either kind was found on the
+device, and neither is guessed at here.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.
