@@ -208,8 +208,27 @@ public struct Predictor: Sendable {
       return .literal(literal)
     }
 
+    // **A tie keeps the literal.** The comparison is strict, and that is not a rounding
+    // preference — it is the only side of an exact tie the asymmetry permits. A tie means
+    // the evidence is exactly balanced between what the user typed and something else,
+    // while the two outcomes cost very different amounts to undo: a wrong autocorrection
+    // has to be noticed, selected and retyped, a missed one costs a backspace. So where
+    // the arithmetic cannot separate them, the typing wins.
+    //
+    // Measured at dead-centre taps, where `literalCost` is exactly zero and the slack is
+    // therefore `0.5 * tapCount` and nothing else, six of eleven unwanted rewrites were
+    // exact ties and now stand: `jonah` → `josh`, `isnthere` → `anthers`, `qwer` → `weer`,
+    // `ios` → `bios`, `hte` → `hate`, `teh` → `eh`. SPEC.md Appendix A.22.
+    //
+    // **Two more are ties in arithmetic and not in IEEE, and still correct.** `np` → `no`
+    // and `pw` → `ow` accumulate a cost of 0.9999999999999997 against a slack of 1.0 —
+    // three parts in 10^16 below the boundary, from summing distances that are each 1.0 by
+    // construction. No tolerance is applied here, because a tolerance on this comparison
+    // would be a tuning constant with nothing measured behind it, and because the same
+    // one-ULP arithmetic is already recorded in A.20 as a property of the geometry rather
+    // than something to paper over. It is a known limit of the rule, not a defect in it.
     let slack = matcher.literalCost(for: word.neighborhoods)
       + Tuning.correctionSlackPerTap * Double(word.tapCount)
-    return best.cost <= slack ? .correction(best.text) : .literal(literal)
+    return best.cost < slack ? .correction(best.text) : .literal(literal)
   }
 }

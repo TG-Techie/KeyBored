@@ -1961,6 +1961,97 @@ Anchoring the frame's top at `bounds.maxY - inset - font.ascender` puts our `B` 
 2511-2538 against stock's `A` at 2510-2537.
 
 
+### A.22 — a tie is not a reason to overrule the typist
+
+The commit rule asks whether the best candidate's cost sits inside a slack, and the slack is
+`literalCost + 0.5 * tapCount`. The comparison used to be `<=`. It is now `<`, and the
+change is one character with a measurable effect.
+
+**Why a tie falls to the literal.** A tie means the arithmetic cannot separate what the user
+typed from what the matcher proposes. The two outcomes are not equally cheap to undo: a
+wrong autocorrection has to be noticed, selected and retyped, while a missed one costs a
+backspace. Where the evidence is balanced and the consequences are not, the typing wins.
+(The asymmetry is reported in the literature — Alharbi, Stuerzlinger and Putze, ISS 2020,
+measured 5.5 seconds to repair a wrong autocorrection across 1,238 events — but that figure
+reached this project secondhand through a survey and the paper has not been read. The rule
+does not depend on the number.)
+
+**Dead-centre taps are the case that exposed it.** A tap on a key's exact centre has
+distance zero, so `literalCost` is exactly 0.0 and the slack is `0.5 * tapCount` and nothing
+else. One edit costs 1.5. So `0.5 * n` reaches 1.5 at three taps, and past that a single
+edit is *always* affordable no matter how precisely the user typed — and more affordable the
+longer the word gets. Worse, 1.5 and multiples of it land on exact multiples of 0.5, so an
+edit-carrying candidate arrives exactly on the boundary rather than near it.
+
+Measured on 2026-09-06 at 430pt against the bundled 75,646-word lexicon, with every tap on
+its key's centre. Thirty-one deliberate non-words; eleven were rewritten on space:
+
+| typed | rewritten to | best cost | slack | after the change |
+|---|---|---|---|---|
+| `jonah` | `josh` | 2.5 | 2.5 | stands |
+| `isnthere` | `anthers` | 4.0 | 4.0 | stands |
+| `qwer` | `weer` | 2.0 | 2.0 | stands |
+| `ios` | `bios` | 1.5 | 1.5 | stands |
+| `hte` | `hate` | 1.5 | 1.5 | stands |
+| `teh` | `eh` | 1.5 | 1.5 | stands |
+| `np` | `no` | 0.9999999999999997 | 1.0 | still rewritten |
+| `pw` | `ow` | 0.9999999999999997 | 1.0 | still rewritten |
+| `sry` | `dry` | 1.0 | 1.5 | still rewritten |
+| `iphone` | `phone` | 1.5 | 3.0 | still rewritten |
+| `keybored` | `keynoted` | 2.0 | 4.0 | still rewritten |
+
+`xkqjv`, `kocienda`, `asdf`, `zxcv`, `hjkl`, `xyz`, `aapl`, `wifi`, `tg`, `hj`, `gm`, `vx`,
+`qk`, `zj`, `mn` stood before and after. `ok`, `brb`, `idk` and `tbh` are in the lexicon and
+were never at risk.
+
+**`borekey` survived by 0.5.** Its best candidate is `horsey` at 4.0 against a slack of 3.5.
+The product's own name is half a normalized unit from being rewritten by its own keyboard.
+
+**Two of the eleven are ties in arithmetic and not in IEEE.** `np` → `no` and `pw` → `ow`
+accumulate 0.9999999999999997 against a slack of 1.0 — three parts in 10^16 below the
+boundary, from summing distances each of which is 1.0 by construction. They still correct.
+No tolerance is applied: a tolerance on this comparison would be a tuning constant with
+nothing measured behind it, and the same one-ULP arithmetic is already recorded in A.20 as a
+property of the geometry rather than something to paper over. **The first count of the ties
+was seven and it was wrong** — the probe rounded costs to three decimals, which is the error
+`a-differential-compares-two-things-you-have-identified` warns about in the fleet SOP: the
+instrument decided the finding.
+
+**The positive set was re-run before this landed**, because standing ties down removes wanted
+corrections that happen to land on a tie as well as unwanted ones. Sixteen one-key slips —
+`hrllo`, `helli`, `thr`, `thrre`, `keyboatd`, `mornibg`, `abiut`, `peopke`, `becahse`,
+`woukd`, `thsnks`, `reslly`, `somethibg`, `olease`, `tomorrpw`, `frienf` — all still correct,
+and not one of them is near the boundary: they win at a cost around 1.0 against slacks of 2.5
+to 4.5. That gap is the argument. A wanted correction is not close to the line; a rewrite
+that arrives exactly on it is the matcher reaching. `dont` → `don't` and `helllo` → `hello`
+also still fire. The only tie in the positive set was `teh` → `eh`, which nobody wanted.
+
+`teh` → `the` is not reachable at all, and not because of this rule: a transposition is an
+insertion plus an omission, and `Tuning.maxEdits` is 1. That is a separate limit, recorded
+here so the table above is not misread as evidence about it.
+
+**The slack formula itself is the larger, open item and this does not touch it.** The
+comment on `Predictor.commit(for:)` says a user typing precisely should not have corrections
+forced on them, and the arithmetic does the reverse: precision drives `literalCost` to its
+floor of zero, and the 0.5-per-tap floor still buys an edit from three taps up. The code
+contradicts its own stated intent. Changing the formula moves the correction rate in both
+directions and needs the negative-fixture work first, so it is recorded as an open decision
+rather than acted on. The four non-tie rewrites in the table are its evidence.
+
+**And the anchoring question this came from has a better answer than the one asked.**
+Gunawardana, Paek and Meek (IUI 2010) show that unrestricted language-model key-target
+resizing can capture a key's entire visual area, making an intended string literally
+unenterable. That cannot happen here: there is no probability, frequency or n-gram term
+anywhere in the scorer. `LexiconEntry` carries `tapForm`, `insertion` and `source` and no
+weight; `Candidate.cost` accumulates only `normalizedManhattan` distances plus the two edit
+penalties; and `literal(for:)` is the nearest key by distance with the lexicon never
+consulted. **The key targets are anchored everywhere by construction, not just centrally.**
+Their result is therefore a constraint on any future frequency term rather than a finding
+about today's code. Nor is anything unenterable at the word level: the literal goes into the
+field at strike time, only a boundary rewrites it, and the left bubble is exactly the literal
+— the user always has a route to the string, it is just not the space bar.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

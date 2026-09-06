@@ -335,3 +335,68 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
 
   #expect(perMatch < .milliseconds(20), "one match took \(perMatch)")
 }
+
+/// **An exact tie keeps what the user typed.**
+///
+/// The commit rule compares the best candidate's cost against a slack, and the two sides of
+/// that comparison are not symmetric in what they cost to undo: a wrong autocorrection has
+/// to be noticed, selected and retyped, while a missed one costs a backspace. So the
+/// comparison is strict, and a tie falls to the literal.
+///
+/// These are the cases that made it strict, measured on 2026-09-06 with taps placed exactly
+/// on the key centres. At dead centre `literalCost` is zero, so the slack is
+/// `0.5 * tapCount` and nothing else — and one edit costs 1.5, which lands on an exact
+/// multiple of the slack for words of three, four, five and eight taps alike. Six of the
+/// eleven unwanted rewrites in that probe were exact ties, including the user's own name.
+///
+/// `np` → `no` and `pw` → `ow` are deliberately not here. They are ties by arithmetic and
+/// three parts in 10^16 below the boundary in IEEE, so they still correct; the comment on
+/// the comparison in `Predictor.commit(for:)` says why no tolerance is applied.
+/// SPEC.md Appendix A.22.
+@Test(arguments: ["jonah", "isnthere", "qwer", "ios", "hte", "teh"])
+func anExactTieKeepsWhatWasTyped(typed: String) {
+  let matcher = makeMatcher()
+  var word = WordInProgress()
+  for neighborhood in neighborhoods(perfectTaps(typed, matcher.geometry), matcher) {
+    word.append(neighborhood)
+  }
+  // The premise: these are ties rather than comfortable wins, so the test would pass
+  // vacuously if the costs ever moved. Assert the premise, not just the outcome.
+  let slack = matcher.literalCost(for: word.neighborhoods)
+    + Tuning.correctionSlackPerTap * Double(word.tapCount)
+  let best = matcher.candidates(for: word.neighborhoods, limit: 1).first
+  #expect(best != nil)
+  #expect(
+    abs((best?.cost ?? .nan) - slack) < 1e-9,
+    "\(typed) is no longer an exact tie: best \(best?.cost ?? .nan) against slack \(slack)")
+  #expect(Predictor(matcher: matcher).commit(for: word) == .literal(typed))
+}
+
+/// The other side of the same rule: standing ties down must not stand real corrections down.
+///
+/// Every one of these is a one-key slip on a word somebody meant, and every one of them wins
+/// strictly rather than on a tie — typically at a cost near 1.0 against a slack of 2.5 or
+/// more. That gap is why the tie change is safe: a wanted correction is not close to the
+/// boundary, and a rewrite that arrives exactly on it is the matcher reaching.
+@Test(
+  arguments: [
+    ("hrllo", "hello"), ("helli", "hello"), ("thr", "the"), ("thrre", "there"),
+    ("keyboatd", "keyboard"), ("mornibg", "morning"), ("abiut", "about"),
+    ("peopke", "people"), ("becahse", "because"), ("woukd", "would"),
+    ("thsnks", "thanks"), ("reslly", "really"), ("somethibg", "something"),
+    ("olease", "please"), ("tomorrpw", "tomorrow"), ("frienf", "friend"),
+  ])
+func aOneKeySlipStillCorrectsAndNotOnATie(typed: String, intended: String) {
+  let matcher = makeMatcher()
+  var word = WordInProgress()
+  for neighborhood in neighborhoods(perfectTaps(typed, matcher.geometry), matcher) {
+    word.append(neighborhood)
+  }
+  let slack = matcher.literalCost(for: word.neighborhoods)
+    + Tuning.correctionSlackPerTap * Double(word.tapCount)
+  let best = matcher.candidates(for: word.neighborhoods, limit: 1).first
+  #expect(
+    (best?.cost ?? .infinity) < slack - 0.25,
+    "\(typed) now wins by less than a quarter unit and is near the tie boundary")
+  #expect(Predictor(matcher: matcher).commit(for: word) == .correction(intended))
+}
