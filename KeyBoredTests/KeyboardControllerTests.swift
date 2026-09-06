@@ -491,3 +491,65 @@ private func strike(_ character: Character, _ controller: KeyboardController) {
   press(.space, controller)
   #expect(controller.shift == .locked)
 }
+
+// MARK: - What a word boundary is
+
+/// **Every boundary commits, and the table is the point rather than the comma.**
+///
+/// Jonah, 2026-09-06 12:59: "if i put a comma on th nd ofna word then type space  an easy
+/// clrrection, is often missed". The comma was the report; the defect was that `endWord()`
+/// discarded the word at every boundary in `handle`, so by the time the space arrived
+/// there was nothing left to correct. A test of the comma alone would pass with the period
+/// and the digits still dropping their corrections, which is how the defect survived a
+/// full suite in the first place. SPEC.md Appendix A.27.
+@MainActor
+@Test func everyBoundaryCommitsTheWordItEnds() {
+  // Each case types `hrllo`, then the boundary, and expects the correction to have been
+  // applied to the letters before the boundary character goes in.
+  let cases: [(name: String, boundary: (KeyboardController) -> Void, expected: String)] = [
+    ("space", { press(.space, $0) }, "hello "),
+    ("return", { press(.newline, $0) }, "hello\n"),
+    (
+      "comma on the numbers plane",
+      {
+        press(.plane(.numbers), $0)
+        strike(",", $0)
+      }, "hello,"
+    ),
+    (
+      "a digit on the numbers plane",
+      {
+        press(.plane(.numbers), $0)
+        strike("5", $0)
+      }, "hello5"
+    ),
+    ("the plane key alone", { press(.plane(.numbers), $0) }, "hello"),
+  ]
+  for (name, boundary, expected) in cases {
+    let (controller, document) = typing()
+    press(.shift, controller)
+    type("hrllo", into: controller)
+    boundary(controller)
+    #expect(document.text == expected, "\(name): got \(document.text.debugDescription)")
+  }
+}
+
+/// **The apostrophe is not a boundary, and that is why it keeps its own case.**
+///
+/// It sits inside `don't`, so committing on it would try to correct `don` — which is a
+/// real word the rule would leave alone today, but the shape is wrong and the next word
+/// with a shorter prefix would not be so lucky. `continuesAWord` already says which
+/// characters mean the next tap lands inside a word, and the boundary rule reads it rather
+/// than keeping a second list.
+@MainActor
+@Test func theApostropheIsInsideAWordRatherThanAfterOne() {
+  let (controller, document) = typing()
+  press(.shift, controller)
+  type("don", into: controller)
+  press(.plane(.numbers), controller)
+  #expect(document.text == "don", "the plane key committed: \(document.text.debugDescription)")
+  strike(SmartPunctuation.apostrophe, controller)
+  type("t", into: controller)
+  press(.space, controller)
+  #expect(document.text == "don\u{2019}t ")
+}

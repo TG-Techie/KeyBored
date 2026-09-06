@@ -2266,6 +2266,93 @@ risk this change carried was never that the plane key would fail to move; it was
 class around it would move with it, and only a test of the set can fail on that.
 
 
+### A.27 — a word boundary that discarded the correction it was there to apply
+
+Reported by Jonah 2026-09-06 12:59: "if i put a comma on th nd ofna word then type space
+an easy clrrection, is often missed". Reproduced on an iPhone 17 Pro at 402pt in two taps,
+BoreKey 0.0.10 build 1:
+
+| typed | field after |
+|---|---|
+| `hrllo` then space | `hello ` |
+| `hrllo` then `,` then space | `hrllo, ` |
+
+**The comma was the report and the boundary was the defect.** `KeyboardController.handle`
+ended a word in two different ways and chose between them by hand at each case.
+`commitWord()` applies the correction and then clears the word; `endWord()` was
+`word.reset()` and only cleared it. Space and return called the first. **The comma, every
+digit and symbol on the numbers plane, the address-field period key and the plane key all
+called the second**, so each of them silently deleted a pending correction, and the space
+that followed found an empty word and had nothing left to do. Nothing was broken about the
+space; the correction had already been thrown away one tap earlier.
+
+**The fix is the naming, not the call sites.** A function called `endWord` reads like the
+thing a word boundary wants, which is why it was picked five times. It is now
+`discardWord()`, and it means something narrower: *the record is no longer valid*. Three
+places mean that and no more — the host reporting a document change this keyboard did not
+make, a bubble whose text has already gone in, and the apostrophe. Everywhere else a
+boundary calls `commitWord()`, and a call to `discardWord()` at a boundary now reads as
+obviously wrong rather than as a synonym.
+
+**The apostrophe is the one character that is not a boundary**, and the code already knew
+it: `continuesAWord(_:)` exists to say that `don'` followed by `t` is a continuation rather
+than a new word. The boundary rule reads that function rather than keeping a second list,
+so there is one place where "which characters end a word" is answered.
+
+**The plane key commits too.** It inserts no character, so it is the one boundary with
+nothing behind it, but the next tap cannot belong to this word either way — and the
+existing test `switchingToDigitsEndsTheWordAndTypesLiterally`, which asserts the bar clears
+on a plane switch, still holds because the word is still gone afterwards.
+
+Verified on the device after the change: `hrllo` then `,` gives `hello,` at 402pt in
+Contacts' search field. `everyBoundaryCommitsTheWordItEnds` covers space, return, the
+comma, a digit and the plane key in one table, because a test of the comma alone would pass
+with the other four still dropping their corrections — which is how this survived a full
+suite. `theApostropheIsInsideAWordRatherThanAfterOne` covers the exception.
+
+**One thing measured and not acted on.** Stock does not autocorrect in Contacts' search
+field at all — `hrllo` then space stays `Hrllo` there — and this keyboard does, because
+`DocumentTraits` carries no autocorrection field and never reads `autocorrectionType`. That
+is a separate gap from this one, it is not what Jonah reported, and it is recorded here
+rather than fixed.
+
+### A.28 — the drop shadow under every cap, and how to tell one from an edge
+
+Jonah, 2026-09-06 12:56: "it should not have a drop shadow... but queu removing them for
+the next rev please".
+
+**There was exactly one shadow declaration and it drew under every cap.** `KeyCap.init` set
+`shadowColor` black, `shadowOpacity` 0.3, `shadowOffset` (0, 1) and `shadowRadius` 0.
+Nothing else in the project sets a shadow property — not the key preview, not the candidate
+bar, not the plate — so the plural in the report is every key's shadow from one line, and
+there is no second one to find.
+
+**Stock draws none, and the test that settles it is whether a pixel goes darker than the
+plate.** A shadow is drawn *under* the plate colour; antialiasing a rounded corner can only
+interpolate between the cap and the plate and never past it. Scanned down a single column
+through the bottom edge of the `f` cap on an iPhone 17 Pro at 402pt:
+
+| | cap | between | plate |
+|---|---|---|---|
+| stock, light | `#FFFFFF` | `#F0F1F4` ×1 | `#E2E3E7` |
+| ours, light | `#FFFFFF` | `#D1D2D3`, `#9D9EA1` ×2, `#BDBEC1` | `#E1E3E6` |
+| stock, dark | `#3D3D3D` | `#3C3C3C`, `#282828` | `#171717` |
+| ours, dark | `#3C3C3C` | `#151515` ×3 | `#171717` |
+
+Stock's intermediate values sit between its cap and its plate in both appearances. Ours sit
+below the plate in both — `#9D9EA1` against a `#E1E3E6` plate, `#151515` against a
+`#171717` plate. So this is not a case of ours being heavier than stock's; stock has none
+and ours had one. Removed.
+
+**Verified after removal, in the same host and appearance:** ours reads `#3D3D3D` to one
+blend pixel `#2B2B2B` to plate `#171717`, which is stock's profile. The last full cap pixel
+is row 2057 against stock's 2054 — 3 physical pixels, 1pt, inside the tolerance A.23
+measured the row bands to. **A mid-scan reading that ours sat 9 pixels lower was the shadow
+and not the geometry**, and it is recorded here because it was nearly written down as a
+row-geometry delta: a hard shadow at radius 0 extends the cap's apparent bottom edge by
+exactly its offset, so measuring a cap's extent while it has one measures the shadow.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

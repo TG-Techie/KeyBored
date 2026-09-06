@@ -335,7 +335,14 @@ public final class KeyboardController {
       // and nothing here is ever corrected. What goes in is the character as struck,
       // except for the two quote keys, which stock resolves against the character in
       // front of the cursor — see `SmartPunctuation`.
-      endWord()
+      //
+      // The apostrophe is the exception, and `continuesAWord` is where that is already
+      // said: it sits *inside* `don't`, so the word is not over and committing would try
+      // to correct `don`. The record is abandoned instead, and the tap after it starts an
+      // unanchored word that nothing will rewrite.
+      if Self.continuesAWord(letter) { discardWord() } else { commitWord() }
+      // Read after the commit, not before: a correction can change the character the
+      // quote is resolving against.
       let previous = document?.textBeforeInput?.last
       insert(
         traits.smartQuotes
@@ -351,10 +358,10 @@ public final class KeyboardController {
 
     case .punctuation(let character):
       // A punctuation cap on the letters plane ends the word the same way a tap on
-      // another plane does — the character goes in as struck and nothing is corrected —
-      // and then the field's capitalization rule gets its say, because a period is one
-      // of the things `.sentences` capitalizes after.
-      endWord()
+      // another plane does — the punctuation itself goes in as struck and is never
+      // corrected — and then the field's capitalization rule gets its say, because a
+      // period is one of the things `.sentences` capitalizes after.
+      commitWord()
       insert(String(character))
       updateAutoShift()
       refresh()
@@ -396,7 +403,11 @@ public final class KeyboardController {
       refresh()
 
     case .plane(let next):
-      endWord()
+      // Leaving the letters plane ends the word, and ending a word commits it. The plane
+      // key inserts nothing, so this is the one boundary with no character behind it —
+      // but the next tap cannot be part of this word either way, and a word that ends is
+      // a word that gets its correction.
+      commitWord()
       plane = next
       rebuildGeometry()
       refresh()
@@ -414,7 +425,7 @@ public final class KeyboardController {
     let text = word.cased(text)
     for _ in 0..<word.tapCount { document?.deleteBackward() }
     insert(text)
-    endWord()
+    discardWord()
     updateAutoShift()
     refresh()
   }
@@ -470,7 +481,7 @@ public final class KeyboardController {
     readTraits()
     let before = document?.textBeforeInput ?? ""
     if !word.isEmpty, !before.hasSuffix(word.cased(predictor.literal(for: word))) {
-      endWord()
+      discardWord()
     }
     if word.isEmpty { updateAutoShift() }
     refresh()
@@ -492,14 +503,14 @@ public final class KeyboardController {
     // taps are a fragment of it, and `tapCount` characters back from the cursor is not
     // where that word begins. SPEC.md Appendix A.16.
     guard word.isAnchored else {
-      endWord()
+      discardWord()
       return
     }
     if case .correction(let text) = predictor.commit(for: word) {
       for _ in 0..<word.tapCount { document?.deleteBackward() }
       document?.insertText(word.cased(text))
     }
-    endWord()
+    discardWord()
   }
 
   /// Every insertion the user asked for, in one place, so that "has anything been typed"
@@ -511,7 +522,23 @@ public final class KeyboardController {
     document?.insertText(text)
   }
 
-  private func endWord() {
+  /// Throws the word in progress away **without** committing it.
+  ///
+  /// **This is not the verb a word boundary wants, and it used to be spelled so that it
+  /// looked like one.** It was `endWord()`, and it sat at every boundary in `handle` — so
+  /// a comma, a digit or the plane key silently deleted the pending correction, and the
+  /// space that followed had nothing left to correct. Reported by Jonah 2026-09-06 12:59:
+  /// "if i put a comma on th nd ofna word then type space  an easy clrrection, is often
+  /// missed". Reproduced in two taps: `hrllo` then space gives `hello`, `hrllo` then a
+  /// comma then space gives `hrllo,`. SPEC.md Appendix A.27.
+  ///
+  /// So the two verbs are named apart. A boundary calls `commitWord()`. This one means
+  /// something narrower and rarer: *the record is no longer valid*, because the document
+  /// moved underneath it or because the text it describes is already gone. There are
+  /// three such places and no more — the host reporting a change this keyboard did not
+  /// make, a bubble whose text has already been inserted, and the apostrophe, which is a
+  /// character inside a word rather than a boundary between two.
+  private func discardWord() {
     word.reset()
   }
 

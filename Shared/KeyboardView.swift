@@ -1173,10 +1173,15 @@ final class KeyCap: UIView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     layer.cornerRadius = StockMetrics.capCornerRadius
-    layer.shadowColor = UIColor.black.cgColor
-    layer.shadowOpacity = 0.3
-    layer.shadowOffset = CGSize(width: 0, height: 1)
-    layer.shadowRadius = 0
+    // **No shadow, and the way to tell one from an edge is whether it goes darker than
+    // the plate.** This cap used to carry `shadowOpacity` 0.3 at a 1pt offset with radius
+    // 0, and Jonah asked for it gone. Stock draws none: scanned down a column through a
+    // cap's bottom edge on an iPhone 17 Pro at 402pt, stock goes white `#FFFFFF` to one
+    // blend pixel `#F0F1F4` to plate `#E2E3E7` in light, and `#3D3D3D` to `#282828` to
+    // plate `#171717` in dark — every value between the cap and the plate, which is what
+    // antialiasing a rounded corner looks like. Ours put three pixels of `#9D9EA1` under
+    // a `#E1E3E6` plate in light and `#151515` under a `#171717` plate in dark, both
+    // *below* the plate, which no edge can produce and only a shadow can. SPEC.md A.28.
     isUserInteractionEnabled = false
     label.textAlignment = .center
     label.frame = bounds
