@@ -703,6 +703,28 @@ only in the same breath as Full Access, since without it the group buys nothing.
    extension needs Full Access. This is a question about what kind of product KeyBored is,
    and it is unresolved.
 
+### Asked for and not yet built
+
+Jonah's, in his words, recorded when he asked rather than when they are taken. Neither is
+designed here; they are written down so that whoever picks one up does not have to ask
+whether they may.
+
+14. **Clipboard integration, and share-link sanitization with it.** Verbatim, 2026-09-06
+    13:28: "Please queue as a feature: auto share / tracking id sanitization when we add
+    clipboard integration, etc". Stripping the tracking parameters a shared URL arrives
+    with — `utm_*`, `fbclid`, `igshid` and their kin — as part of whatever clipboard
+    handling gets built, rather than as a feature of its own.
+
+15. **A real container app, and it now has to carry the build's provenance.** Verbatim, in
+    the same message and explicitly as a consequence of the item above: "Number 3 will also
+    necessitate cleaning up the in app experience so it actually contains settings display
+    and input, build number, commit number, etc". **This is the same screen as the Full
+    Access and settings item raised at 08:07 and they are one item, not two.** The commit
+    number is the part with a cost attached: the app has to carry its own git SHA, which is
+    a build-settings change — a `GIT_COMMIT` written into the Info.plist at build time,
+    which xcodegen can do but does not do today, and which has to work from an archive as
+    well as from a debug build.
+
 ### Decided, and reversible
 
 Each of these was decided rather than deferred. Any can be overturned; the reasoning is
