@@ -540,7 +540,10 @@ final class KeyboardView: UIView {
   /// once per top-row keystroke, reported 2026-09-05 and visible in `IMG_8416` as a blank
   /// middle cell in the one frame captured mid-press. Covering part of a word for the
   /// length of a press is the smaller wrong.
-  private func previewFrame(above key: Key) -> CGRect {
+  /// Not private so `PreviewGeometryTests` can assert the two things that were wrong here
+  /// in 0.0.7: that the preview ends on its own key, and that it never starts above the
+  /// keyboard's own top edge.
+  func previewFrame(above key: Key) -> CGRect {
     let cap = key.frame
     let width = cap.width * StockMetrics.previewBulbWidthInCaps
     let top = max(0, cap.minY - cap.height * StockMetrics.previewRiseInCaps)

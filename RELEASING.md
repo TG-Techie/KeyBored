@@ -395,4 +395,33 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   **Still unproven on a device:** multi-touch at real typing speed, which needs his phone
   and cannot be exercised here. Fixed in 0.0.6, unit-green, never typed on fast.
 
-The tree is at 0.0.7 build 1, which is spent. Bump before archiving again.
+- **0.0.8 build 1.** Uploaded at 10:27 EDT on 2026-09-06 from commit `1d83880` with a clean
+  tree, 82 tests passing. It carries the key preview, which Jonah had reported twice: "the
+  preview bubble is still not reliably showing when a tap matches a key" and "the
+  confirmation bubble is still poorly sized and placed".
+
+  **Not reliably showing** was one shared preview view between all fingers. Until 0.0.6 the
+  keyboard had multi-touch off, so UIKit delivered one finger and discarded the rest and
+  there was never a second preview to draw; turning multi-touch on removed that accidental
+  guarantee and left the single view behind. A second finger retargeted the first finger's
+  preview instead of adding one, and the first finger lifting hid it while the second was
+  still down. There is now one preview per touch, keyed by the touch.
+
+  **Poorly sized and placed** was four separate errors, each found by measuring against
+  stock in the same Contacts field on a 430pt simulator rather than by looking at the two
+  side by side. The shoulders were the cap corner's radius doubled, 42px, against stock's
+  36. The letter was 25.2pt, the size of the one on the cap, against stock's 37.5. The
+  letter was centred in the bulb, which no label can be, because a label centres its line
+  box. And the shape had a parallel-sided stem taken from one row's reading of a silhouette
+  that narrows the whole way down, which put it 14px per side too wide where it meets the
+  key. It is one path now and it reads within a pixel of stock from the top of the bulb to
+  y 2065 and within 3 to 4px a side at its worst. SPEC.md A.19 has every number.
+
+  **And one defect found while checking the fix**: on the top row, where there is not room
+  for the full rise, the whole preview had been pushed down rather than shortened, which
+  hung its foot a third of a cap below the letter it was announcing. It shortens now.
+
+  **Still unproven on a device:** multi-touch at real typing speed, which needs his phone.
+  Also unmeasured: the preview at 402pt and in light appearance.
+
+The tree is at 0.0.8 build 1, which is spent. Bump before archiving again.

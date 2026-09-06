@@ -49,6 +49,7 @@
 		C017F879F4446DD46E986AE7 /* 12dicts-2of12inf-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */; };
 		C10FF9337D6821C1B09EC69D /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
 		C39143B6EFBBC9024B8ED488 /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
+		C9BB728007BFE774803ACFCD /* PreviewGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B511A91A36ABD0661925F05 /* PreviewGeometryTests.swift */; };
 		C9E7E76ABE8A98504113C6FE /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
 		DBFF1BE423AFF63D6DB50C95 /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
 		E42B041F2DD9210A4CDEE855 /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
@@ -101,6 +102,7 @@
 		53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersion.swift; sourceTree = "<group>"; };
 		63D19F82651FDDD5CE4BFE99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewTests.swift; sourceTree = "<group>"; };
+		7B511A91A36ABD0661925F05 /* PreviewGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewGeometryTests.swift; sourceTree = "<group>"; };
 		7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "12dicts-2of12inf-lowercase.txt"; sourceTree = "<group>"; };
 		7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPunctuation.swift; sourceTree = "<group>"; };
 		81222902FB2FAA2B91476168 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -193,6 +195,7 @@
 				6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */,
 				A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */,
 				E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */,
+				7B511A91A36ABD0661925F05 /* PreviewGeometryTests.swift */,
 				92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */,
 			);
 			path = KeyBoredTests;
@@ -364,6 +367,7 @@
 				1D52AB0B7EB2884F1E2553B5 /* Lexicon.swift in Sources */,
 				0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */,
 				0EABA5E23BFF0BFEBF9F129D /* MemoryBudget.swift in Sources */,
+				C9BB728007BFE774803ACFCD /* PreviewGeometryTests.swift in Sources */,
 				7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */,
 				071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */,
 				55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */,
@@ -527,7 +531,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.7;
+				MARKETING_VERSION = 0.0.8;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_DISPLAY_NAME = BoreKey;
@@ -595,7 +599,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.7;
+				MARKETING_VERSION = 0.0.8;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
