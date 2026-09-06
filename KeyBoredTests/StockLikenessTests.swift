@@ -356,3 +356,33 @@ private func type(_ characters: String, on controller: KeyboardController) {
     }
   }
 }
+
+/// **The height asked for is not stock's plate, and how much less is not one number.**
+///
+/// iOS keeps a strip at the bottom of what it gives a custom keyboard, and a keyboard as
+/// tall as stock's plate therefore sits high by exactly that strip. The amount was
+/// measured at 13px on a 402pt phone and shipped as a constant; on a 440pt phone it is 7,
+/// and the six-pixel difference is what "still ever so shorter, missing some padding along
+/// the bottom" was, reported against 0.0.7 on 2026-09-06.
+///
+/// The sign is the trap and so it is asserted here: the input view's bottom is pinned and
+/// the rows are laid out from its top, so a **smaller** inset means a **taller** request
+/// and rows that sit **higher**. Reading it the other way put them twice as far out.
+@Test func theHeightAskedForGivesUpTheStripIOSKeeps() {
+  for width in [390.0, 402.0] as [CGFloat] {
+    #expect(
+      abs(StockMetrics.declaredHeight(forWidth: width)
+        - (StockMetrics.totalHeight(forWidth: width) - 13 / 3)) < 0.001,
+      "a small phone gives up 13px")
+  }
+  for width in [430.0, 440.0] as [CGFloat] {
+    #expect(
+      abs(StockMetrics.declaredHeight(forWidth: width)
+        - (StockMetrics.totalHeight(forWidth: width) - 7 / 3)) < 0.001,
+      "a large phone gives up 7px")
+  }
+  #expect(
+    StockMetrics.declaredHeight(forWidth: 440) - StockMetrics.totalHeight(forWidth: 440)
+      > StockMetrics.declaredHeight(forWidth: 402) - StockMetrics.totalHeight(forWidth: 402),
+    "the large phone gives up less, so it asks for relatively more")
+}

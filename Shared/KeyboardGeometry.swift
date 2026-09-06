@@ -187,6 +187,61 @@ public enum StockMetrics {
     width >= largePhoneWidth ? 135 / 3 : 129 / 3
   }
 
+  /// The height to ask for, which is stock's plate **less thirteen pixels iOS will not
+  /// give a custom keyboard.**
+  ///
+  /// Measured on a 402pt simulator, 2026-09-05, with both keyboards in the same Contacts
+  /// search field: stock's plate runs y 1617-2410 and the bottom of a custom keyboard's
+  /// input view is pinned at 2397 whatever height it asks for — 765 put its top at 1632,
+  /// 793 put its top at 1604, and both ended at 2397. iOS gives its own globe and
+  /// dictation strip those last 13px; stock's plate simply extends over them.
+  ///
+  /// So a keyboard as tall as stock's plate sits 13px high, every row 13px above stock's
+  /// in a side-by-side, which is what a whole afternoon of otherwise-identical
+  /// measurements kept showing. Asking for 13px less puts the four key rows exactly on
+  /// stock's and gives up the bottom 13px of plate instead, which is the right trade:
+  /// the rows are where the fingers go, and the band underneath is dark either way.
+  ///
+  /// **It is not the same on a phone of another size**, which the note here used to say
+  /// had not been checked. It has been now, and it is two values rather than one:
+  ///
+  ///     iPhone 17 Pro      402 pt wide    13 px
+  ///     iPhone 17 Pro Max  440 pt wide     7 px
+  ///
+  /// Measured 2026-09-06 the only way this quantity can be, which is by looking at where
+  /// the rows land: both keyboards in the same Contacts search field, dark, our four cap
+  /// bands against stock's four. At 402pt they were already on top of each other, tops at
+  /// 1773, 1935, 2097 and 2259 in both. At 440pt every one of ours sat exactly 6px below
+  /// stock's — 1995 against 1989, 2163 against 2157, 2331 against 2325, 2499 against
+  /// 2493 — with identical cap heights of 135, an identical pitch of 168, an identical
+  /// plate top and iOS's globe glyph in an identical place. A uniform shift with
+  /// everything else equal is a height.
+  ///
+  /// **The sign is the part to get right, and it is the opposite of the intuition.** The
+  /// input view's bottom is pinned wherever it lands and the rows are laid out from its
+  /// top, so asking for *less* height moves every row *down*. Ours were already 6px low,
+  /// so the inset had to shrink rather than grow. Asking for 6px less first — the reading
+  /// that felt right — put them 12px low, which is how this is known rather than assumed.
+  /// With 7px the four bands read 1989, 2157, 2325 and 2493: stock's, exactly.
+  ///
+  /// Reported before it was found, on 0.0.7, as "still ever so shorter (i think its
+  /// missing some padding along the bottom)" — which is what it looks like from the
+  /// front, because height we do not give up is padding the last row eats.
+  /// SPEC.md Appendix A.18.
+  ///
+  /// **The boundary is `largePhoneWidth` and it is inherited, not measured.** It is the
+  /// same 414 that `StockMetrics.rowHeight(forWidth:)` uses and carries the same caveat:
+  /// nothing has been measured between 402 and 430, and Jonah's phone at 430 is assumed
+  /// to behave as the 440 simulator does because both are above the line. The 6px is a
+  /// measurement; where it starts applying is a guess.
+  public static func systemBottomInset(forWidth width: CGFloat) -> CGFloat {
+    width >= largePhoneWidth ? 7 / 3 : 13 / 3
+  }
+
+  public static func declaredHeight(forWidth width: CGFloat) -> CGFloat {
+    totalHeight(forWidth: width) - systemBottomInset(forWidth: width)
+  }
+
   /// The bottom row's `123` and the slot beside it, which on stock is the emoji key.
   ///
   /// Their sum plus one gap is `planeKeyWidthFraction`: 140 + 18 + 141 = 299. So the

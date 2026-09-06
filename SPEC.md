@@ -1623,6 +1623,57 @@ producing errors of both signs is possible and is not evidence of one, so it sta
 separate open question until something measures it.
 
 
+### A.18 — the differential against stock, and the 6px only a big phone shows
+
+Run on 2026-09-06 after he wrote "you literally have the reference keyboard installed why
+are you plural not all nailing this". The method is the point: both keyboards in the same
+Contacts search field, dark, switched with the globe key and told apart by the suggestion
+bar's divider, which ours draws and stock does not; `rows` then extracts every cap band and
+every cap's x extent from each screenshot, and the two are diffed.
+
+**iPhone 17 Pro, 402pt wide.** Identical. Cap bands at y = 1773, 1935, 2097 and 2259 in
+both, all 129px tall; caps 100-102px wide on both, matching to a pixel of thresholding;
+plate top 1618 against 1617; iOS's globe glyph in the same place. Shift and delete are 2px
+narrower in ours, 134/135 against 136/137, and nothing else differs.
+
+**iPhone 17 Pro Max, 440pt wide.** Every one of our four rows sat exactly 6px below
+stock's:
+
+    stock   1989   2157   2325   2493
+    ours    1995   2163   2331   2499
+
+with identical cap heights of 135, an identical pitch of 168, an identical plate top and
+the globe glyph in an identical place. Everything equal but a uniform shift is a height,
+not a layout.
+
+The height is `systemBottomInset`, the amount by which the keyboard asks for less than
+stock's plate because iOS keeps a strip at the bottom that a custom keyboard is not given.
+It was measured at 13px on a 402pt phone, shipped as a constant, and the source carried the
+note "**Measured on one device.** Whether the 13 is the same on a phone of another size was
+not checked." It is not: on a 440pt phone it is 7.
+
+**The sign is the part worth recording, because the intuitive reading is backwards.** The
+input view's bottom is pinned wherever iOS puts it and the rows are laid out from its top,
+so asking for *less* height moves every row *down*. Our rows were already 6px low, so the
+inset had to shrink. Trying 19px first — asking for 6px less, the reading that felt right —
+put them 12px low, and that wrong build is how the direction is known rather than assumed.
+At 7px the four bands read 1989, 2157, 2325 and 2493: stock's, exactly.
+
+He reported it as "still ever so shorter (i think its missing some padding along the
+bottom)", which is what it looks like from the front: height not given up is padding the
+last row eats.
+
+**What is measured and what is inherited.** The 6px is measured, on a 440pt simulator
+against stock in the same field. The boundary at which it starts applying is not: it reuses
+`largePhoneWidth`, the same 414 that `rowHeight(forWidth:)` guesses at, and carries the same
+caveat — nothing has been measured between 402 and 430, and his 430pt phone is assumed to
+behave as the 440 simulator does because both are above the line.
+
+**Not yet run, and named so it is not mistaken for done:** the light appearance, the numeric
+and symbol planes, the pressed states, the key preview's geometry, and any host other than
+Contacts. This entry covers the letter plane in dark on two widths.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

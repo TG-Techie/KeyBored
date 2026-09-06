@@ -24,30 +24,8 @@ final class KeyboardViewController: UIInputViewController {
   /// Both heights are re-set on every layout pass, because the height stock draws is not
   /// the same on every phone: see `StockMetrics.rowHeight(forWidth:)`.
   private lazy var keyboardViewHeight = keyboardView.heightAnchor.constraint(
-    equalToConstant: Self.declaredHeight(forWidth: view.bounds.width))
+    equalToConstant: StockMetrics.declaredHeight(forWidth: view.bounds.width))
 
-  /// The height to ask for, which is stock's plate **less thirteen pixels iOS will not
-  /// give a custom keyboard.**
-  ///
-  /// Measured on a 402pt simulator, 2026-09-05, with both keyboards in the same Contacts
-  /// search field: stock's plate runs y 1617-2410 and the bottom of a custom keyboard's
-  /// input view is pinned at 2397 whatever height it asks for — 765 put its top at 1632,
-  /// 793 put its top at 1604, and both ended at 2397. iOS gives its own globe and
-  /// dictation strip those last 13px; stock's plate simply extends over them.
-  ///
-  /// So a keyboard as tall as stock's plate sits 13px high, every row 13px above stock's
-  /// in a side-by-side, which is what a whole afternoon of otherwise-identical
-  /// measurements kept showing. Asking for 13px less puts the four key rows exactly on
-  /// stock's and gives up the bottom 13px of plate instead, which is the right trade:
-  /// the rows are where the fingers go, and the band underneath is dark either way.
-  ///
-  /// **Measured on one device.** Whether the 13 is the same on a phone of another size
-  /// was not checked.
-  private static let systemBottomInset: CGFloat = 13 / 3
-
-  private static func declaredHeight(forWidth width: CGFloat) -> CGFloat {
-    StockMetrics.totalHeight(forWidth: width) - systemBottomInset
-  }
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -97,8 +75,8 @@ final class KeyboardViewController: UIInputViewController {
     //
     // Pinned to the bottom rather than the top, which with an equal height is the same
     // layout and says the right thing: this view sits on the bottom of whatever the
-    // system gives it. Where the system puts that bottom, and the 13px it keeps for
-    // itself, is `systemBottomInset`.
+    // system gives it. Where the system puts that bottom, and the pixels it keeps for
+    // itself — which are not the same number on every phone — is `systemBottomInset`.
     keyboardView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -108,7 +86,7 @@ final class KeyboardViewController: UIInputViewController {
     ])
 
     heightConstraint = view.heightAnchor.constraint(
-      equalToConstant: Self.declaredHeight(forWidth: width))
+      equalToConstant: StockMetrics.declaredHeight(forWidth: width))
     heightConstraint.priority = .required - 1
 
     followSystemAppearance()
@@ -147,7 +125,7 @@ final class KeyboardViewController: UIInputViewController {
     super.viewWillLayoutSubviews()
     controller.hasGlobeKey = needsInputModeSwitchKey
     controller.resize(width: view.bounds.width)
-    let height = Self.declaredHeight(forWidth: view.bounds.width)
+    let height = StockMetrics.declaredHeight(forWidth: view.bounds.width)
     keyboardViewHeight.constant = height
     heightConstraint.constant = height
     render()
