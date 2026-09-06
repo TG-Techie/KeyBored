@@ -51,7 +51,7 @@ final class KeyboardViewController: UIInputViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    view.backgroundColor = KeyboardView.plateColor
+    clearThePlate()
 
     let width = view.bounds.width > 0 ? view.bounds.width : UIScreen.main.bounds.width
     controller = KeyboardController(
@@ -164,7 +164,28 @@ final class KeyboardViewController: UIInputViewController {
   /// that does it has been found to test against.
   private func followSystemAppearance() {
     view.overrideUserInterfaceStyle = .unspecified
-    view.backgroundColor = KeyboardView.plateColor
+    clearThePlate()
+  }
+
+  /// Lets the system's own keyboard background show, by refusing to paint over it.
+  ///
+  /// `UIInputViewController`'s `view` is already a `UIInputView` drawing the keyboard
+  /// material, and this keyboard had been painting `KeyboardView.plateColor` on top of it
+  /// — a constant over a material. That is why A.4 and A.9 recorded two different values
+  /// for stock's light plate and could not decide between them: stock's plate is a blur of
+  /// whatever the host has behind the keyboard, and it moves when that moves.
+  ///
+  /// Measured 2026-09-06 in a Contacts search field, this keyboard against stock in the
+  /// same field within a minute, identity confirmed from the globe's long-press list each
+  /// time. With the paint gone the two are **the same bytes** on both backdrops and in
+  /// both appearances: light `#E1E3E6` over the contact list and `#E2E4E8` over the empty
+  /// "No Results" state, dark `#171717` over both. The painted constant was `#DFE0E6`,
+  /// which matched neither. SPEC.md Appendix A.11.
+  ///
+  /// `plateColor` is kept: the container app's preview draws the keyboard on an ordinary
+  /// view with no material behind it, and there it is still the right colour to paint.
+  private func clearThePlate() {
+    view.backgroundColor = .clear
   }
 
   private func render() {

@@ -643,9 +643,13 @@ only in the same breath as Full Access, since without it the group buys nothing.
 
 9. **Stock's caps are slightly translucent and these are painted.** The same stock cap
    reads `#404041` over the Contacts list and `#3D3D3D` over a Safari page; ours reads
-   `#404041` over both. Three units on one channel, for a structural change: drawing on a
-   `UIInputView` with the `.keyboard` style instead of on a plate we paint. Appendix A.6
-   has the measurement.
+   `#404041` over both. Appendix A.6 has the measurement. **The plate half of this is
+   done** — `UIInputViewController`'s `view` is already a `UIInputView` drawing the
+   material, so the fix was to stop painting over it, and the plate is now byte-identical
+   to stock on every backdrop measured (A.11). The caps are not, and there is no
+   documented system view for a key cap the way there is for the background, so matching
+   them means guessing a `UIVisualEffectView` style — and a guess that is close is worse
+   than a measured constant that is three units off.
 10. **Delete repeats but does not accelerate.** Stock waits about four tenths of a second,
     repeats about ten times a second, and after a few seconds starts taking whole words.
     This does the first two. The third has not been timed off a stock keyboard, and
@@ -733,7 +737,7 @@ stated fallback rather than a `!`. Verified by type-checking against the iOS 26.
 | `setMarkedText:selectedRange:` / `unmarkText` (iOS 13) | ignored | provisional text, underlined, replaced on commit — the mechanism a prediction could use instead of insert-then-delete. Out of scope for now, recorded because §6.3's delete-and-reinsert is the thing it would replace. |
 | `hasText` (UIKeyInput) | ignored | cheaper than reading the context back. |
 | `adjustTextPositionByCharacterOffset:` | ignored | no cursor keys, so nothing needs it. |
-| `UIInputView(frame:inputViewStyle:)` with `.keyboard` | a plain `UIView` with a hand-mixed plate colour | "mimics the keyboard background", per the header's own comment. The sampled colours stay as the fallback and as what the container app draws. |
+| `UIInputView(frame:inputViewStyle:)` with `.keyboard` | **adopted, by deletion** | "mimics the keyboard background", per the header's own comment — and `UIInputViewController.view` already is one, so the keyboard was painting over the material rather than lacking it. `view.backgroundColor = .clear` is the whole adoption; the sampled colours stay as what the container app draws. A.11. |
 | `UIInputView.allowsSelfSizing` (iOS 9) | a height constraint activated in `viewDidAppear` | the supported way to let autolayout size the input view. The workaround in `KeyboardViewController` exists because nobody had read this. |
 | `handleInputModeListFromView:withEvent:` (iOS 10) | `advanceToNextInputMode` only | that is a tap; this is the long press that shows the keyboard list. Both, as the stock globe key does. |
 | `hasDictationKey` | ignored | whether the host wants a dictation key drawn. |
@@ -1269,14 +1273,36 @@ premise they contradict — that there is one value to measure — is the thing 
 
 This is the same mechanism A.4 already recorded for the caps, where one stock cap read
 `#404041` over Safari and `#3D3D3D` over the black Contacts list. It is now measured on the
-plate as well, deliberately rather than incidentally, and section 10's open question about
-drawing on a `UIInputView` with the `.keyboard` style rather than on a painted plate is
-where the fix would go. **Nothing was changed on the strength of this.** A painted plate
-can only match one backdrop; `#DFE0E6` is as good a choice as the other two and is the one
-that has been shipped.
+plate as well, deliberately rather than incidentally.
 
-**What was not tried:** the same experiment in dark appearance, and whether the drift is
-larger over a backdrop that is not mostly white. Both are the same three commands.
+**And the fix was one line, because the material was already there.** Section 10 had this
+down as "draw on a `UIInputView` with the `.keyboard` style rather than on a painted
+plate", which sounded like a rewrite. `UIInputViewController`'s `view` **is** a
+`UIInputView` drawing that material; this keyboard was painting `plateColor` over the top
+of it. Removing the paint — `view.backgroundColor = .clear` — is the whole change, and the
+result is byte-identical to stock on every backdrop and appearance measured:
+
+    backdrop                              stock            BoreKey, plate painted   BoreKey, paint removed
+    light, the Contacts list              #E1E3E6/#E1E3E7  #DFE0E6                  #E1E3E6/#E1E3E7
+    light, "No Results"                   #E2E4E7/#E2E4E8  #DFE0E6                  #E2E4E7/#E2E4E8
+    dark, "No Results"                    #171717          #1F1F1F                  #171717
+
+Note what the middle column says about the old A.4 target as well: `#DFE0E6` was measured
+off a real stock capture, and it still did not match stock in either of the two states
+measured here, because there was never a value that would.
+
+`KeyboardView.plateColor` is kept. The container app draws the same `KeyboardView` on an
+ordinary view with no material behind it, and there a painted colour is the right thing.
+
+**The caps are the same problem and are not fixed.** In the dark pair above, ours reads
+`#404041` where stock reads `#3D3D3D` — our constant against stock's material, exactly as
+with the plate. There is no documented system view for a key cap the way `UIInputView` is
+one for the background, so matching it means guessing at a `UIVisualEffectView` style, and a
+guess that is close is worse than a measured constant that is three units off. Section 10
+keeps it as an open question, now with a number attached.
+
+**What was not tried:** whether the drift is larger over a backdrop that is not mostly
+white or mostly black, and any host other than Contacts for the paint-removed build.
 
 ## Appendix B — sources
 
