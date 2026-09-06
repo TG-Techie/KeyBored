@@ -1000,6 +1000,12 @@ values above are the Safari ones, and matching the material properly means drawi
 `UIInputView` with the `.keyboard` style rather than on a painted plate. Section 10 carries
 it as an open question.
 
+**And so is the plate, which makes every stock number in this table a reading rather than a
+constant.** A.11 measures the light plate moving from `#E1E3E6` to `#E2E4E8` under one
+keyboard in one field when only the content behind it changed. The `#DFE0E6` above is a true
+reading of the backdrop it was taken over and is what ships; it is not a value stock holds
+still at. Read A.11 before treating any row here as a target to hit exactly.
+
 ### A.5 — what stock draws on the return key
 
 iOS 26 draws glyphs where earlier iOS drew words, and two of them were measured directly:
@@ -1173,8 +1179,8 @@ breaks the plane that already matches.
 **The light plate is three units off, and this contradicts A.4.** Ours reads `#DFE0E6` and
 stock `#E2E4E8` in this pair, where A.4 recorded stock's light plate as `#DFE0E6` — which
 is the value ours is now set to. One of the two stock readings is wrong, or stock's plate is
-not one colour in every context. **Open.** Nothing was changed on the strength of this;
-A.4's number stands until a third capture breaks the tie.
+not one colour in every context. **Resolved by A.11: the second half is the answer, and
+neither reading is wrong.** Both stock numbers stand as readings of different backdrops.
 
 **Whether stock dims the return key on an empty field is open, and the evidence is
 contradictory.** A.5 recorded that it does not, retracting an earlier note that said it
@@ -1236,6 +1242,41 @@ match with stock. Whether stock also changes the cap is unknown.
 **Also not chased:** smart dashes (`--` to an em dash) and smart insert/delete, which are
 the other two halves of the same iOS setting. Neither was measured and neither is
 implemented.
+
+### A.11 — stock's plate is not a colour, and that is why two captures disagreed
+
+Measured 2026-09-06 between 01:20 and 01:35, light appearance, Contacts search field, one
+keyboard swapped for the other in the same field within a minute or two. **Which keyboard
+was on screen was confirmed from the globe's long-press list before every reading** — the
+highlighted row is the current keyboard — because the bar's quoted literal, which had been
+serving as a tell, is stock's own format and identified nothing. A.9 is about that mistake;
+this is what checking costs, which is one long press and one screenshot.
+
+    backdrop behind the keyboard        stock            BoreKey
+    the Contacts list                   #E1E3E6/#E1E3E7  not sampled
+    "No Results", the list filtered out #E2E4E7/#E2E4E8  #DFE0E6
+
+Nothing changed between the two stock rows but the content **underneath** the keyboard: the
+same field, the same keyboard, the same appearance, seconds apart, three `z` keystrokes
+filtering the list away. The plate moved by three units and BoreKey's did not move at all,
+because BoreKey paints a constant and stock does not.
+
+**Stock's plate is a blurred material over the host's content.** It reads uniform across the
+width because the blur averages the whole backdrop, which is exactly why it looked like a
+flat colour in every single capture and why two honest measurements of it disagreed. A.4's
+`#DFE0E6` and A.9's `#E2E4E8` are both correct readings of different backdrops, and the
+premise they contradict — that there is one value to measure — is the thing that was wrong.
+
+This is the same mechanism A.4 already recorded for the caps, where one stock cap read
+`#404041` over Safari and `#3D3D3D` over the black Contacts list. It is now measured on the
+plate as well, deliberately rather than incidentally, and section 10's open question about
+drawing on a `UIInputView` with the `.keyboard` style rather than on a painted plate is
+where the fix would go. **Nothing was changed on the strength of this.** A painted plate
+can only match one backdrop; `#DFE0E6` is as good a choice as the other two and is the one
+that has been shipped.
+
+**What was not tried:** the same experiment in dark appearance, and whether the drift is
+larger over a backdrop that is not mostly white. Both are the same three commands.
 
 ## Appendix B — sources
 
