@@ -2052,6 +2052,69 @@ field at strike time, only a boundary rewrites it, and the left bubble is exactl
 — the user always has a route to the string, it is just not the space bar.
 
 
+### A.23 — the differential at 402pt, and the wall lying down
+
+The 402pt simulator was recorded as broken — it "stopped presenting any keyboard, stock
+included". **It was not broken.** `I/O > Keyboard > Connect Hardware Keyboard` was checked,
+which suppresses the software keyboard entirely; a text field takes focus, shows a caret and
+a clear button, and no keyboard appears. Unchecking it brought stock back at 1206x2622,
+402x874pt. That is the third instrument fault of 2026-09-06, after the stock-against-stock
+measurement and a probe that rounded its costs to three decimals.
+
+The host is Safari's URL field rather than Contacts, so this run also covers the
+"another host" half of the differential.
+
+**Every plane matches stock within a pixel.** Measured with `rows.swift` on paired captures
+in dark appearance, all four row bands identical on all three planes:
+
+| row | stock | ours |
+|---|---|---|
+| 1 | y 1773-1901, h 129 | y 1773-1901, h 129 |
+| 2 | y 1935-2063, h 129 | y 1935-2063, h 129 |
+| 3 | y 2097-2225, h 129 | y 2097-2225, h 129 |
+| 4 | y 2259-2387, h 129 | y 2259-2387, h 129 |
+
+Cap x-extents differ by at most 1px everywhere, and cap widths by at most 1px. This is the
+same measurement that on 2026-09-05 showed a 37px row-1 offset and a 6px pitch difference;
+those are gone. The symbol plane's key content matches stock character for character,
+including the bottom row's `ABC | space | return` with no period key — the period is already
+in row 3 there, and stock does the same.
+
+**One real geometry delta, on the letters plane only.** Stock's bottom row is
+`123` 20-297, space 316-860 (545), period 879-978, return 997-1186. Ours is `123` 19-297,
+space 315-863 (549), period 881-980, return 998-1186. Our space bar is about 3px too wide
+and pushes the period key 2px right. The number and symbol planes' bottom rows agree to 1px,
+so it is specific to the row that carries a period key.
+
+**And one defect, which is A.19's wall lying down.** The bulb is `183/109` of a cap wide, so
+a bulb centred over `q` at 402pt starts 16px to the left of the keyboard's own margin — and
+an extension cannot draw there, so the input view sliced it flat. Pressed on `q`, ours drew
+a bulb with a straight vertical left edge; stock's, pressed on the same key, sits fully
+inside the keyboard with its left edge on the cap's own left edge and the whole shape leaning
+right.
+
+This is exactly the top row's defect turned ninety degrees, and it had the same wrong shape
+of fix available: move the whole frame and take the foot off the key. What went in instead
+holds the frame inside the span the keys occupy and lets the taper follow the key, because
+the taper is drawn to the key rather than to the frame:
+
+- `previewFrame(above:)` clamps `x` into `[margin, width - margin - bulbWidth]`.
+- `KeyPreview` carries the key's **rectangle** in its own coordinates, not a width and a
+  height. Those two numbers can only locate the key if the preview is centred over it, which
+  is the assumption that was false. With the rectangle, an off-centre preview is expressible
+  and a foot in the wrong place is not.
+
+Exactly two letters lean: `q` and `p`, by 11.5px each at 402pt. `a` and `z` start half a key
+and a key and a half in from the edge, so their bulbs fit centred and are untouched.
+`onlyTheOutermostColumnLeans` asserts that list rather than the weaker "centred or resting on
+a margin", which a keyboard that shoved every preview onto a margin would also satisfy.
+
+**Not measured, and flagged rather than asserted.** Stock showed no candidate bar in this
+field while ours always draws one, which puts Safari's own toolbar 80px higher above our
+keyboard than above stock's. Whether that is a difference between the two keyboards or the
+simulator's predictive-text setting cannot be told from a screenshot, and was not chased.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

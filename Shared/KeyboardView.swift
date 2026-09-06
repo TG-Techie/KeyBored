@@ -555,11 +555,26 @@ final class KeyboardView: UIView {
   /// Not private so `PreviewGeometryTests` can assert the two things that were wrong here
   /// in 0.0.7: that the preview ends on its own key, and that it never starts above the
   /// keyboard's own top edge.
+  ///
+  /// **The outermost columns are the same problem lying down.** The bulb is two thirds
+  /// wider than its key, so a bulb centred over `q` reaches 16px past the keyboard's own
+  /// left margin at 402pt and is sliced flat by the input view's edge exactly as the top
+  /// row's was. Stock's is not: pressed on `q` at 402pt its bulb's left edge sits on the
+  /// cap's left edge and the whole shape leans right. So the frame is held inside the span
+  /// the keys occupy, and the taper — drawn to the key rather than to the frame — leans
+  /// with it. Measured on an iPhone 17 Pro simulator, 2026-09-06. SPEC.md A.23.
   func previewFrame(above key: Key) -> CGRect {
     let cap = key.frame
     let width = cap.width * StockMetrics.previewBulbWidthInCaps
     let top = max(0, cap.minY - cap.height * StockMetrics.previewRiseInCaps)
-    return CGRect(x: cap.midX - width / 2, y: top, width: width, height: cap.maxY - top)
+    // `bounds.width` rather than the geometry's, because they are the same number by the
+    // guard in `layoutSubviews` and this one cannot be nil.
+    let margin = bounds.width * StockMetrics.sideMarginFraction
+    // `max` after `min`, so that a keyboard too narrow to hold a bulb between its margins
+    // lands on the left margin rather than outside both of them.
+    let left = min(max(cap.midX - width / 2, margin), bounds.width - margin - width)
+    return CGRect(
+      x: max(margin, left), y: top, width: width, height: cap.maxY - top)
   }
 
   /// What a point on this keyboard means. Every touch resolves to exactly one of these,
@@ -699,8 +714,7 @@ final class KeyboardView: UIView {
     view.show(
       String(isShifted ? Character(String(letter).uppercased()) : letter),
       in: previewFrame(above: key),
-      capHeight: key.frame.height,
-      capWidth: key.frame.width)
+      over: key.frame)
   }
 
   /// Repeats the delete while the key is held. The point reported is the key's own
@@ -1001,8 +1015,13 @@ final class KeyboardView: UIView {
 final class KeyPreview: UIView {
   private let label = UILabel()
   private let shape = CAShapeLayer()
-  private var capHeight: CGFloat = 0
-  private var capWidth: CGFloat = 0
+  /// The key this preview belongs to, in the preview's own coordinates.
+  ///
+  /// Not a width and a height, which is what it used to be, because those two numbers can
+  /// only say where the key is if the preview is centred over it — and on the outermost
+  /// columns it is not. Carrying the rectangle makes an off-centre preview expressible and
+  /// a wrongly-placed foot not.
+  private var cap: CGRect = .zero
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -1019,11 +1038,11 @@ final class KeyPreview: UIView {
 
   /// Puts this preview over a key, with the letter that key is currently drawing.
   ///
-  /// The cap's size comes in rather than being derived from the frame, because the frame
-  /// is clamped on the top row and the shape has to keep its proportions when it is.
-  func show(_ text: String, in frame: CGRect, capHeight: CGFloat, capWidth: CGFloat) {
-    self.capHeight = capHeight
-    self.capWidth = capWidth
+  /// The key's own rectangle comes in rather than being derived from the frame, because the
+  /// frame is clamped on the top row and at both outer columns, and the shape has to keep
+  /// its proportions and find its foot when it is.
+  func show(_ text: String, in frame: CGRect, over cap: CGRect) {
+    self.cap = cap.offsetBy(dx: -frame.minX, dy: -frame.minY)
     label.text = text
     self.frame = frame
     setNeedsLayout()
@@ -1039,17 +1058,17 @@ final class KeyPreview: UIView {
   /// wide per side by the time it reaches the cap; see `StockMetrics.previewTaperTopInCaps`
   /// for what was measured and what is approximated.
   private func teardrop() -> UIBezierPath {
-    let capTop = bounds.maxY - capHeight
-    let taperTop = capTop - capHeight * StockMetrics.previewTaperTopInCaps
-    let taperBottom = capTop + capHeight * StockMetrics.previewTaperBottomInCaps
-    let pull = capHeight * StockMetrics.previewTaperPullInCaps
-    let capLeft = bounds.midX - capWidth / 2
-    let capRight = bounds.midX + capWidth / 2
+    let capTop = bounds.maxY - cap.height
+    let taperTop = capTop - cap.height * StockMetrics.previewTaperTopInCaps
+    let taperBottom = capTop + cap.height * StockMetrics.previewTaperBottomInCaps
+    let pull = cap.height * StockMetrics.previewTaperPullInCaps
+    let capLeft = cap.minX
+    let capRight = cap.maxX
     // The shoulders cannot be rounder than the straight part of the side is long, which
     // is what would happen if a phone ever gave the preview less room than it wants.
     let shoulder = min(
       StockMetrics.previewBulbCornerRadius, (taperTop - bounds.minY) / 2, bounds.width / 2)
-    let foot = min(StockMetrics.capCornerRadius, capWidth / 2)
+    let foot = min(StockMetrics.capCornerRadius, cap.width / 2)
 
     let path = UIBezierPath()
     path.move(to: CGPoint(x: bounds.minX, y: bounds.minY + shoulder))
@@ -1095,7 +1114,7 @@ final class KeyPreview: UIView {
     label.textColor = KeyboardView.keyTextColor.resolvedColor(with: traitCollection)
     label.frame = CGRect(
       x: 0, y: 0, width: bounds.width,
-      height: capHeight * StockMetrics.previewLetterBoxInCaps)
+      height: cap.height * StockMetrics.previewLetterBoxInCaps)
   }
 }
 
