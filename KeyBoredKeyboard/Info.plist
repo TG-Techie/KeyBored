@@ -17,11 +17,23 @@
        looks like success. -->
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
-  <!-- Also the brand, from the same single source as CFBundleDisplayName. Some Settings
-       surfaces fall back to CFBundleName, which is why leaving it as the target name
-       showed the old name on a real phone even once the display name was right. -->
-  <key>CFBundleName</key>
-  <string>$(PRODUCT_DISPLAY_NAME)</string>
+  <!-- CFBundleName is deliberately not set here. It cannot be: with
+       GENERATE_INFOPLIST_FILE on, Xcode merges its own keys over this file and always
+       writes CFBundleName = $(PRODUCT_NAME), so a $(PRODUCT_DISPLAY_NAME) written here
+       looked right in the file and produced "KeyBored" in two uploaded builds.
+       INFOPLIST_KEY_CFBundleName is not a setting Xcode honours either; both were tried
+       on 2026-09-05 and read back out of the archived product.
+
+       So CFBundleName tracks the target name and stays KeyBored, which is consistent
+       with SPEC.md section 10: PRODUCT_NAME also names the Swift module, the executable
+       and the test host, all of which are internal. Setting it to the brand was tried
+       and reverted — it broke `@testable import KeyBored` in every test file, which is
+       the internal name leaking into source for the sake of one manifest key.
+
+       This is only safe because CFBundleName is a fallback for when CFBundleDisplayName
+       does not fit, and "BoreKey" is seven characters against a fifteen-character
+       budget. Not verified on a device: if the old name ever shows up in Settings, this
+       is the key it came from. -->
   <key>NSExtension</key>
   <dict>
     <key>NSExtensionAttributes</key>
