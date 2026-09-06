@@ -1143,13 +1143,52 @@ final class KeyPreview: UIView {
     shape.fillColor = KeyboardView.capColor.resolvedColor(with: traitCollection).cgColor
 
     // The letter is drawn at stock's size, half again the size of the one on the cap, and
-    // centred in a box measured down from the top of the preview rather than in any part
-    // of the shape. See `StockMetrics.previewLetterBoxInCaps`.
-    label.font = .systemFont(ofSize: StockMetrics.previewLetterPointSize)
+    // centred in a box whose bottom edge is fixed **relative to the cap** and whose top
+    // edge is the top of the bulb. See `StockMetrics.previewLetterBoxInCaps` for where the
+    // measurement came from.
+    //
+    // **The anchor is the cap and not the bulb's top, because the bulb's top moves.** On
+    // the top row there is no room above the keyboard to rise into, so `previewFrame`
+    // clamps the bulb short — and a box of fixed height measured down from a top that has
+    // dropped puts the letter that much lower over the cap, which is to say further under
+    // the finger. Jonah, 2026-09-06 13:28: "for the rows where the popup bubble needs to be
+    // shorter, please top justify the letter rn its still obscured by the finger for that
+    // tow row". Anchoring the box to the cap does exactly that: the box loses whatever the
+    // bulb lost, and the letter rises with the shape instead of staying put in it.
+    //
+    // **It is one expression and not a special case for the top row**, and on a bulb with
+    // its full rise it reduces exactly to the old one — `desired` comes out at
+    // `inkInBox` and the frame lands at y = 0. The clamp only ever does anything when the
+    // bulb has been shortened.
+    //
+    // **The arithmetic is on ink, because the measurement was.** SPEC.md section 8.2: a
+    // label lays out a line box and the glyph sits inside it off-centre, so a number read
+    // off a screenshot has to be applied to the glyph and not to the frame. `inkInBox` is
+    // where the ink lands inside the measured box — the line box centred in it, then down
+    // from its top by the part of the ascent the capital does not use — and the frame is
+    // then placed so the ink arrives where it is wanted.
+    let font = UIFont.systemFont(ofSize: StockMetrics.previewLetterPointSize)
+    label.font = font
     label.textColor = KeyboardView.keyTextColor.resolvedColor(with: traitCollection)
-    label.frame = CGRect(
-      x: 0, y: 0, width: bounds.width,
-      height: cap.height * StockMetrics.previewLetterBoxInCaps)
+
+    let box = cap.height * StockMetrics.previewLetterBoxInCaps
+    let inkInBox = (box - font.lineHeight) / 2 + font.ascender - font.capHeight
+    // Where the ink goes if the bulb has all its room: a fixed height above the cap.
+    let desired =
+      (bounds.maxY - cap.height) - (cap.height * StockMetrics.previewRiseInCaps - inkInBox)
+    // And where it goes when it does not: centred in the room the bulb actually has above
+    // the cap. `max` rather than `min`, because a larger y is further down — the measured
+    // position wins whenever the bulb can hold it, and the clipped one is pushed back down
+    // only as far as it must be to sit inside the shape.
+    //
+    // Measured at 402pt: the top row's bulb has 34.7pt above the cap against 65.9pt on the
+    // rows below it, and a capital at this size is 26.6pt of ink, so the letter lands 4.0pt
+    // below the bulb's top there and 21.0pt below it everywhere else. Before this it landed
+    // 21.0 below on every row, which on the clipped one left it 15.3pt above the cap
+    // instead of 44.9pt — under the finger, which is what was reported.
+    let roomAboveCap = bounds.maxY - cap.height
+    let inkTop = max((roomAboveCap - font.capHeight) / 2, desired)
+    label.frame = CGRect(x: 0, y: inkTop - inkInBox, width: bounds.width, height: box)
   }
 }
 

@@ -103,3 +103,88 @@ func onlyTheOutermostColumnLeans(width: CGFloat) {
     }
   }
 }
+
+/// **The letter sits the same distance above its cap on every row, including the one whose
+/// bulb is clipped.**
+///
+/// Reported by Jonah 2026-09-06 13:28: on the top row the letter is "still obscured by the
+/// finger". The bulb there cannot rise its full height — there is nothing above the
+/// keyboard to rise into — so `previewFrame` clamps it, and a letter box measured down from
+/// the bulb's top followed the top down and put the letter lower over the cap. The box is
+/// anchored to the cap now.
+///
+/// **This measures ink and not the label's frame**, which is the distinction SPEC.md
+/// section 8.2 exists for and the reason that section did not already cover this case: the
+/// frame was placed correctly by its own description both before and after, and only the
+/// glyph moved. The preview is rendered and the darkest pixels are found.
+@MainActor
+@Test func theLetterKeepsItsHeightAboveTheCapOnAClippedBulb() {
+  let width: CGFloat = 402
+  let view = KeyboardView(frame: CGRect(x: 0, y: 0, width: width, height: 300))
+  let geometry = KeyboardGeometry(width: width, plane: .letters, hasGlobeKey: true)
+  view.configure(geometry: geometry, shift: .off, needsNextKeyboard: true)
+
+  /// The top of the glyph's ink, in the preview's own coordinates, or nil if nothing drew.
+  func inkTop(over key: Key) -> CGFloat? {
+    let frame = view.previewFrame(above: key)
+    let preview = KeyPreview(frame: frame)
+    preview.show(String(key.letter!), in: frame, over: key.frame)
+    let scale: CGFloat = 3
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = scale
+    format.opaque = false
+    let image = UIGraphicsImageRenderer(bounds: preview.bounds, format: format).image { _ in
+      preview.layer.render(in: UIGraphicsGetCurrentContext()!)
+    }
+    guard let cg = image.cgImage else { return nil }
+    let w = cg.width, h = cg.height
+    var pixels = [UInt8](repeating: 0, count: w * h * 4)
+    let context = CGContext(
+      data: &pixels, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+      space: CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    context.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+    for y in 0..<h {
+      for x in 0..<w {
+        let i = (y * w + x) * 4
+        // Opaque and dark: the bulb's fill is the cap colour and the ground is clear, so
+        // the only dark opaque pixels in the image are the letter.
+        if pixels[i + 3] > 200, pixels[i] < 100, pixels[i + 1] < 100, pixels[i + 2] < 100 {
+          return CGFloat(y) / scale
+        }
+      }
+    }
+    return nil
+  }
+
+  // Row 0's bulb is clipped by the top of the input view and row 1's is not, which is the
+  // premise: assert it rather than assume it, or this passes vacuously the day the
+  // keyboard gains room above the top row.
+  let e = geometry.keys.first { $0.letter == "e" }!
+  let d = geometry.keys.first { $0.letter == "d" }!
+  #expect(
+    view.previewFrame(above: e).minY == 0,
+    "the top row's preview is no longer clipped, so this no longer tests anything")
+  #expect(view.previewFrame(above: d).minY > 0)
+
+  guard let eInk = inkTop(over: e), let dInk = inkTop(over: d) else {
+    Issue.record("no ink was found in one of the previews")
+    return
+  }
+  // How far the ink sits above each cap's own top edge, which is the distance the finger
+  // is competing with.
+  let eAbove = e.frame.minY - (view.previewFrame(above: e).minY + eInk)
+  let dAbove = d.frame.minY - (view.previewFrame(above: d).minY + dInk)
+
+  // The row that has its room is untouched: its ink sits 21.0pt below the bulb's top and
+  // 44.9pt above its cap, which is where the measured box has always put it.
+  #expect(abs(dInk - 21.0) < 0.5, "row 1's letter moved: \(dInk) below the bulb's top")
+  #expect(abs(dAbove - 44.9) < 0.5, "row 1's letter moved: \(dAbove) above its cap")
+
+  // The clipped row's letter rises inside its shorter bulb rather than staying put in it.
+  // It was 21.0 below the bulb's top and 15.3 above the cap; it is 11.7 and 23.0 now.
+  #expect(eInk < dInk - 5, "the top row's letter did not rise: \(eInk) below the bulb's top")
+  #expect(eAbove > 20, "the top row's letter is \(eAbove) above its cap, which is too low")
+  // And it is still inside the shape rather than clamped off the top of it.
+  #expect(eInk > 0, "the top row's letter starts above the bulb at \(eInk)")
+}

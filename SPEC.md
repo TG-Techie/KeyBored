@@ -2434,6 +2434,69 @@ fitted to this table rather than derived from anything. Jonah, 13:00: the named 
 the fit this note exists to refuse.
 
 
+### A.30 — the letter in a clipped preview, and the fourth thing wrong with that geometry
+
+Jonah, 2026-09-06 13:28: "for the rows where the popup bubble needs to be shorter, please
+top justify the letter rn its still obscured by the finger for that tow row".
+
+The top row's bulb cannot rise its full height — there is nothing above the keyboard to rise
+into — so `previewFrame` clamps it, and the letter box was measured down from the bulb's
+top. When the top dropped, the letter dropped with it and ended up sitting over the cap,
+which is where the finger is. Measured at 402pt: 34.7pt of room above the cap on the top row
+against 65.9pt on the rows below, and the letter landed 21.0pt below the bulb's top on every
+row, which left it **15.3pt above the top row's cap against 44.9pt everywhere else**.
+
+**The rule is one expression and the top row is not a case in it.** The letter keeps its
+measured height above the cap; where the bulb is too short to hold it there, it is centred
+in the room the bulb actually has. On a bulb with its full rise the second term never binds
+and the placement is exactly what it was. Measured after: 11.7pt below the bulb's top and
+23.0pt above the cap on the top row, unchanged at 21.0 and 44.9 below.
+
+**This is the fourth defect in this one piece of geometry** — after the bulb being clipped by
+the input view's top edge, the foot landing off the key, and the outermost columns being
+sliced by the keyboard's own margin. It is the same lesson each time: every geometry decision
+an extension makes has to be made inside the input view's box rather than discovered at it.
+
+**And it is section 8.2 again, in the case 8.2 did not cover.** The label's frame was placed
+correctly by its own description both before and after; only the glyph moved. So the
+arithmetic here is on ink: where the ink lands inside the measured box is computed from the
+font's line height, ascender and cap height, and the frame is then placed so the ink arrives
+where it is wanted. `theLetterKeepsItsHeightAboveTheCapOnAClippedBulb` renders the preview
+and finds the darkest pixels rather than asserting anything about the label.
+
+### A.31 — a stock capture from his phone, measured against ours
+
+Staged at `~/Downloads/bar/keyboard-evidence/stock-1324.png`, 1290x1041, which is a 430pt
+phone at 3x. Scanned for white runs along a line through each row, so the numbers below are
+the cap runs excluding their antialiased edges — about two pixels narrower than the caps.
+
+| | stock capture | ours at 430pt |
+|---|---|---|
+| row 0 left edge | 7.0 | 6.7 |
+| row 0 cap width | 35.7 (+aa ≈ 36.3) | 36.3 |
+| row 0 right edge | 423.3 | 423.3 |
+| bottom row, first key | 7.3 wide 45.3 (+aa ≈ 46) | 6.7 wide 46.7 |
+| bottom row, second key | 60.0 wide 45.7 (+aa ≈ 46.3) | 59.3 wide 47.0 |
+| space bar | 113.0 wide 204 (+aa ≈ 205) | 112.3 wide 205.0 |
+| return | 324.3 wide 98.7 (+aa ≈ 100) | 323.3 wide 100.0 |
+
+**Nothing in the geometry changes.** Every edge lands within a point of ours once the
+antialiasing is accounted for, and the space bar and return key are exact. A.23's finding
+holds against a capture from his own phone rather than a simulator.
+
+**What it does settle is the emoji key.** Stock's bottom row here is `123`, an emoji key, the
+space bar and return, with the globe on the separate strip below. Ours in the same shape is a
+double-width `123` spanning both of the first two slots — 99.7pt where stock has 46 and 46.3
+either side of a 6pt gap. So **adding the emoji key is splitting that key back into two**,
+and the widths that come out of the existing layout already match stock's. That removes the
+guesswork from the bottom-row work rather than adding to it.
+
+**Not measured:** the row bands vertically, the suggestion bar, and the two glyphs stock puts
+at the ends of it. The capture is cropped to the keyboard with the plate's rounded corner
+visible, so the vertical origin is not the screen's and comparing row tops would be comparing
+against an unknown offset.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.
