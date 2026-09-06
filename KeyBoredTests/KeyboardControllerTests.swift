@@ -239,6 +239,30 @@ private func strike(_ character: Character, _ controller: KeyboardController) {
   #expect(KeyboardGeometry(width: 402, plane: .numbers).key(for: SmartPunctuation.quote) != nil)
 }
 
+/// The period key an address field gets is a punctuation key, not a letter key, and the
+/// difference is the whole reason it has its own role: it ends the word in progress and
+/// the matcher never sees where it was struck. SPEC.md Appendix A.14.
+@MainActor
+@Test func theAddressFieldsPeriodKeyEndsTheWordAndInsertsAPeriod() {
+  let (controller, document) = typing()
+  document.traits = DocumentTraits(autocapitalization: .none, wantsPeriodKey: true)
+  controller.attach(document)
+
+  type("word", into: controller)
+  #expect(controller.bar.literal == "word")
+
+  let period = controller.geometry.keys.first { $0.role == .punctuation(".") }!
+  controller.handle(period, at: period.center)
+  #expect(document.text == "word.")
+  #expect(controller.bar.literal.isEmpty)
+
+  // And a field that does not ask for one has no such key to strike.
+  let (plain, plainDocument) = typing()
+  plainDocument.traits = .unspecified
+  plain.attach(plainDocument)
+  #expect(plain.geometry.keys.allSatisfy { $0.role != .punctuation(".") })
+}
+
 /// A field that turns smart quotes off gets the ASCII characters, which is the one place
 /// this keyboard is allowed to differ from what stock draws on the cap.
 @MainActor

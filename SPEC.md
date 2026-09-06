@@ -1440,6 +1440,66 @@ rather than an action word — in a field that sets `enablesReturnKeyAutomatical
 doing both was found on this device, so the keyboard dims only action return keys, which is
 what was observed rather than what was generalised from it.
 
+### A.14 — the period key an address field gets, and the row it rearranges
+
+Safari's address field is the one host this keyboard has been compared against more than
+any other, and its bottom row had never been measured key by key. It is not the same row.
+
+Measured 2026-09-06, iPhone 17 Pro simulator, light, Safari's address field, 1206px wide at
+3x. Stock and this keyboard were captured in the same field minutes apart, and which
+keyboard was on screen was confirmed from the globe long-press list before each capture
+rather than inferred from what the row looked like.
+
+    key       stock            this keyboard
+    123       20-297           19-297
+    space     316-860  (545)   315-889  (575)
+    .         879-978  (100)   absent
+    return    997-1186 (190)   907-1186 (280)
+
+Gaps are 18px throughout in both, and the period cap occupies rows 2259-2387, the same band
+as the rest of row 3. Stock spends the difference the obvious way: the return key gives up
+110px and the space bar 30, and 100 of that becomes a cap with a period on it.
+
+The three widths this keyboard sets — the `123` key, the period cap and the return — land on
+stock's to within a pixel. The space bar is the remainder and comes out four reference
+pixels wide, 549 against stock's 545 at 402pt. The row now has three gaps where it had two,
+and the gap fraction is a shade under the 18px stock draws, so the shortfall lands in the
+one key that absorbs it. Closing it would mean moving the column gap, which every other row
+is measured against, for 1.2pt on the bottom row.
+
+**It is the letters plane only.** The number and symbol planes of the same field, captured
+in the same sitting, have no period key and the full-width return — stock's space bar there
+is 316-889, which is this keyboard's to within a pixel. So the period key is not a property
+of the field alone; it is the letters plane of that field.
+
+**The field is `.webSearch`, and that was read rather than assumed.** Safari's address bar
+looks like the textbook `UIKeyboardType.URL` and is not. A probe build of this keyboard,
+installed for the purpose, inserted `keyboardType`'s raw value into the field on
+presentation and it came back `10`, which is `.webSearch`, with `returnKeyType` `1`, which
+is `.go`. Both agree with what stock draws.
+
+**Whether `.URL` and `.emailAddress` behave the same way is untested, and the keyboard does
+nothing for them.** Reaching a field of either kind means an app that has one; the obvious
+route, an email field in a Contacts card, needed the edit screen, and taps on that screen
+would not land — three attempts on the Edit button did nothing, with the same script that
+had just driven Safari and the globe list. `wantsPeriodKey` therefore answers true for
+`.webSearch` and false for everything else, which is what was seen rather than what would
+be reasonable.
+
+The key is a new `KeyRole.punctuation`, not a `.letter`. The difference is the matcher's:
+`letterKeys` is the constellation, and a period on the letters plane is a point no word has.
+It ends the word in progress and inserts the character the way a tap on another plane does,
+and then the field's capitalization rule gets its say, because a period is one of the things
+`.sentences` capitalizes after.
+
+**What else was measured in the same sitting, and matched.** The symbols plane, which was
+the reason for going in: rows land at 1774/1936/2097/2259 on stock against 1773/1935/2097/
+2259 here, every inter-key gap in rows 1 and 3 is the same to within a pixel, and the cap's
+left edge tracks stock's to within one pixel from the top of the cap down. The one residue
+is the corner: stock's cap stops narrowing about 20px below its top edge and this one stops
+at about 16, on a radius drawn at 21. That is a sub-point difference at 3x measured through
+a brightness threshold, and it is recorded rather than acted on.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

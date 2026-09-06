@@ -81,18 +81,28 @@ public struct DocumentTraits: Sendable, Equatable {
   /// quite agree — see `returnKeyIsDimmed`, which is where the observed rule lives.
   public var enablesReturnKeyAutomatically: Bool
 
+  /// Whether this is a field stock gives a dedicated period key in the bottom row.
+  ///
+  /// Measured on `UIKeyboardType.webSearch`, which is what Safari's address field asks
+  /// for — read off the field itself with a probe build rather than assumed. Whether
+  /// stock does the same for `.URL` and `.emailAddress` is untested: no field of either
+  /// kind was reached on the device. SPEC.md Appendix A.14.
+  public var wantsPeriodKey: Bool
+
   public init(
     autocapitalization: Autocapitalization = .sentences,
     returnKey: ReturnKey = .newline,
     isSecure: Bool = false,
     smartQuotes: Bool = true,
     enablesReturnKeyAutomatically: Bool = false,
+    wantsPeriodKey: Bool = false,
   ) {
     self.autocapitalization = autocapitalization
     self.returnKey = returnKey
     self.isSecure = isSecure
     self.smartQuotes = smartQuotes
     self.enablesReturnKeyAutomatically = enablesReturnKeyAutomatically
+    self.wantsPeriodKey = wantsPeriodKey
   }
 
   /// What holds when the field says nothing. `.sentences` is UIKit's own documented
@@ -286,7 +296,8 @@ public final class KeyboardController {
   /// globe appearing cannot each grow their own copy of these three lines.
   private func rebuildGeometry(width: CGFloat? = nil) {
     geometry = KeyboardGeometry(
-      width: width ?? geometry.width, plane: plane, hasGlobeKey: hasGlobeKey)
+      width: width ?? geometry.width, plane: plane, hasGlobeKey: hasGlobeKey,
+      hasPeriodKey: traits.wantsPeriodKey)
     predictor = Predictor(
       matcher: ConstellationMatcher(geometry: geometry, lexicon: lexicon))
   }
@@ -331,6 +342,16 @@ public final class KeyboardController {
           rebuildGeometry()
         }
       }
+      refresh()
+
+    case .punctuation(let character):
+      // A punctuation cap on the letters plane ends the word the same way a tap on
+      // another plane does — the character goes in as struck and nothing is corrected —
+      // and then the field's capitalization rule gets its say, because a period is one
+      // of the things `.sentences` capitalizes after.
+      endWord()
+      insert(String(character))
+      updateAutoShift()
       refresh()
 
     case .space:
@@ -456,15 +477,22 @@ public final class KeyboardController {
     isShifted ? Character(String(character).uppercased()) : character
   }
 
+  /// Re-reads the field's traits, and rebuilds the layout if one of them is a layout.
+  ///
+  /// Most traits only change how a key is drawn or what it inserts. `wantsPeriodKey` moves
+  /// the space bar and the return key, so it has to reach the geometry, and the host can
+  /// change fields under a keyboard that is already on screen.
+  private func readTraits() {
+    let previous = traits
+    traits = document?.traits ?? .unspecified
+    if traits.wantsPeriodKey != previous.wantsPeriodKey { rebuildGeometry() }
+  }
+
   /// Re-arms the one-shot shift from where the insertion point actually is.
   ///
   /// Called only where the shift state is the keyboard's to decide — a word boundary, a
   /// delete back to nothing, a change the host made. A tap on the shift key is the
   /// user's, and nothing here overrides it.
-  private func readTraits() {
-    traits = document?.traits ?? .unspecified
-  }
-
   private func updateAutoShift() {
     // Caps lock is the user's, and it survives every boundary until they strike shift
     // again. Auto-shift arms a one-shot; it does not get to cancel a latch.

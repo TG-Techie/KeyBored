@@ -76,6 +76,73 @@ private func type(_ characters: String, on controller: KeyboardController) {
   #expect(abs(large.rowPitch * 3 - 168) < 0.01)
 }
 
+/// Stock's address-field bottom row, measured 2026-09-06 in Safari's address field on a
+/// 402pt simulator at 3x, with this keyboard captured in the same field minutes apart and
+/// the identity of each confirmed from the globe long-press list:
+///
+///     key      stock px      ours before
+///     123      20-297        19-297
+///     space    316-860       315-889
+///     .        879-978       absent
+///     return   997-1186      907-1186
+///
+/// The assertions below are in reference pixels, so the geometry is built at 430pt —
+/// 1290/3 — where a point is exactly three reference pixels. SPEC.md Appendix A.14.
+@MainActor
+@Test func anAddressFieldGetsStocksPeriodKeyAndTheNarrowerReturn() {
+  let width: CGFloat = 1290 / 3
+  let plain = KeyboardGeometry(width: width, plane: .letters)
+  let address = KeyboardGeometry(width: width, plane: .letters, hasPeriodKey: true)
+
+  func row3(_ geometry: KeyboardGeometry) -> [Key] {
+    geometry.keys.filter { $0.id.row == 3 }.sorted { $0.frame.minX < $1.frame.minX }
+  }
+
+  #expect(plain.hasPeriodKey == false)
+  #expect(address.hasPeriodKey)
+  #expect(row3(plain).count == 3)
+  #expect(row3(address).count == 4)
+
+  let period = row3(address)[2]
+  let returnKey = row3(address)[3]
+  #expect(period.role == .punctuation("."))
+  #expect(returnKey.role == .newline)
+  #expect(abs(period.frame.width * 3 - 107) < 1)
+  #expect(abs(returnKey.frame.width * 3 - 203) < 1)
+
+  // The `123` key is untouched.
+  #expect(abs(row3(plain)[0].frame.minX - row3(address)[0].frame.minX) < 0.5)
+  #expect(abs(row3(plain)[0].frame.width - row3(address)[0].frame.width) < 0.5)
+
+  // The space bar is the remainder, as it is without the period key. Stock's 545px at
+  // 402pt is 583 reference pixels and this comes out at 587, because the row now has
+  // three gaps rather than two and the gap fraction is a shade under the 18px stock
+  // draws. Four reference pixels is 1.2pt on the phone this was measured on, and closing
+  // it would mean moving the gap, which every other row depends on. SPEC.md A.14.
+  #expect(abs(row3(address)[1].frame.width * 3 - 583) < 5)
+
+  // Both trailing keys end on the same margin the plain return does.
+  #expect(abs(row3(plain)[2].frame.maxX - returnKey.frame.maxX) < 0.5)
+
+  // The period key is not a letter key, so it is not a point in anybody's constellation.
+  #expect(address.letterKeys.count == plain.letterKeys.count)
+  #expect(address.key(for: ".") == nil)
+}
+
+/// The period key is the letters plane's. Stock's number and symbol planes in the same
+/// Safari address field had no period key in the bottom row and the full-width return —
+/// measured in the same sitting, `stknum.png` and `stksym.png`. SPEC.md Appendix A.14.
+@MainActor
+@Test func theOtherPlanesKeepTheirFullWidthReturnEvenInAnAddressField() {
+  for plane in [Plane.numbers, Plane.symbols] {
+    let geometry = KeyboardGeometry(width: 1290 / 3, plane: plane, hasPeriodKey: true)
+    #expect(geometry.hasPeriodKey == false)
+    let row3 = geometry.keys.filter { $0.id.row == 3 }.sorted { $0.frame.minX < $1.frame.minX }
+    #expect(row3.count == 3)
+    #expect(abs(row3[2].frame.width * 3 - 300) < 1)
+  }
+}
+
 @MainActor
 @Test func theBottomRowSplitsForTheGlobeExactlyWhereStockPutsItsEmojiKey() {
   let width: CGFloat = 1290 / 3  // so a point is a pixel divided by the reference scale

@@ -223,7 +223,20 @@ private final class ProxyDocument: TextDocument {
       isSecure: proxy.isSecureTextEntry ?? false,
       smartQuotes: Self.smartQuotes(proxy.smartQuotesType),
       enablesReturnKeyAutomatically: proxy.enablesReturnKeyAutomatically ?? false,
+      wantsPeriodKey: Self.wantsPeriodKey(proxy.keyboardType),
     )
+  }
+
+  /// Whether stock would put a dedicated period key in this field's bottom row.
+  ///
+  /// `.webSearch` is the one that was measured, and it was measured twice over: stock
+  /// draws the key in Safari's address field, and a probe build of this keyboard read
+  /// `keyboardType` back off that same field as `.webSearch` rather than the `.URL` it
+  /// looks like. **The other kinds are guesses and so this returns false for them** —
+  /// `.URL` and `.emailAddress` are the two most likely to behave the same way, and no
+  /// field of either kind was reached on the device to find out. SPEC.md Appendix A.14.
+  private static func wantsPeriodKey(_ type: UIKeyboardType?) -> Bool {
+    type == .webSearch
   }
 
   /// `.no` is the only refusal; `.default` leaves it to the keyboard and `.yes` asks for

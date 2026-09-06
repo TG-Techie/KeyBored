@@ -223,6 +223,9 @@ final class KeyboardView: UIView {
   private func accessibilityLabel(for key: Key) -> String {
     switch key.role {
     case .letter(let c): return isShifted ? String(c).uppercased() : String(c)
+    // Punctuation is not shifted: the period key stock draws in an address field is a
+    // period whatever the shift is doing.
+    case .punctuation(let c): return String(c)
     case .space: return "space"
     case .delete: return "delete"
     case .shift:
@@ -252,6 +255,7 @@ final class KeyboardView: UIView {
   private func title(for key: Key) -> String {
     switch key.role {
     case .letter(let c): return isShifted ? String(c).uppercased() : String(c)
+    case .punctuation(let c): return String(c)
     case .space: return ""
     case .newline: return Self.returnKeyWord(returnKey)
     case .plane(let plane): return plane == .letters ? "ABC" : (plane == .numbers ? "123" : "#+=")

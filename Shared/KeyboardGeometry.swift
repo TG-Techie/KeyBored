@@ -33,6 +33,15 @@ public struct KeyID: Hashable, Sendable {
 /// everything else is a command, resolved before the matcher is ever consulted.
 public enum KeyRole: Equatable, Sendable {
   case letter(Character)
+
+  /// A key that inserts a character and takes no part in matching.
+  ///
+  /// The distinction is the matcher's, not the drawing's: a `.punctuation` cap looks
+  /// exactly like a letter cap and is struck the same way, but its position is not a
+  /// point in any word's constellation, so putting one on the letters plane must not
+  /// change what the matcher scores against. Stock's address-field period key is the
+  /// only one of these so far — SPEC.md Appendix A.14.
+  case punctuation(Character)
   case shift
   case delete
   case space
@@ -54,6 +63,16 @@ public struct Key: Sendable {
   public var letter: Character? {
     if case .letter(let c) = role { return c }
     return nil
+  }
+
+  /// The character this key inserts, whether or not the matcher scores it. `letter` is
+  /// the one to reach for when the question is about matching; this one when the
+  /// question is about what the cap draws or what goes into the document.
+  public var character: Character? {
+    switch role {
+    case .letter(let c), .punctuation(let c): return c
+    default: return nil
+    }
   }
 }
 
@@ -82,6 +101,17 @@ public enum StockMetrics {
   public static let deleteWidthFraction: CGFloat = 145 / referenceWidthPx
   public static let planeKeyWidthFraction: CGFloat = 299 / referenceWidthPx
   public static let returnWidthFraction: CGFloat = 300 / referenceWidthPx
+
+  /// The bottom row of an address field's keyboard, which stock divides differently.
+  ///
+  /// Measured 2026-09-06 on stock in Safari's address field, 1206px wide at 3x, against
+  /// this keyboard in the same field minutes apart: stock puts a 100px period key between
+  /// a 545px space bar and a 190px return key, where this keyboard had a 575px space bar
+  /// and a 280px return. The two fractions below are those two widths carried to the
+  /// 1290px reference; the space bar takes what is left, the same way it does without the
+  /// period key. SPEC.md Appendix A.14.
+  public static let periodKeyWidthFraction: CGFloat = 107 / referenceWidthPx
+  public static let returnWidthWithPeriodFraction: CGFloat = 203 / referenceWidthPx
 
   /// Vertical metrics, in points: measured pixels divided by the reference @3x scale.
   ///
@@ -185,6 +215,14 @@ public struct KeyboardGeometry: Sendable {
   /// which is the system's answer to "does this installation need a way off this
   /// keyboard" and is false when iOS provides its own switcher.
   public let hasGlobeKey: Bool
+
+  /// Whether the bottom row carries stock's dedicated period key.
+  ///
+  /// Like `hasGlobeKey`, this belongs to the geometry rather than to the drawing, because
+  /// it moves the space bar and the return key. It is the letters plane only: stock's
+  /// number and symbol planes in the same field have no period key in the bottom row and
+  /// the full-width return, which was measured in the same sitting. SPEC.md Appendix A.14.
+  public let hasPeriodKey: Bool
   public let keys: [Key]
 
   /// Centre-to-centre spacing, the unit distances are normalized by. Scores expressed
@@ -200,8 +238,17 @@ public struct KeyboardGeometry: Sendable {
     Array("zxcvbnm"),
   ]
 
-  public init(width: CGFloat, plane: Plane = .letters, hasGlobeKey: Bool = false) {
+  public init(
+    width: CGFloat,
+    plane: Plane = .letters,
+    hasGlobeKey: Bool = false,
+    hasPeriodKey: Bool = false,
+  ) {
     self.hasGlobeKey = hasGlobeKey
+    // Asking for the key on a plane that does not draw one is not an error; the plane
+    // decides, so the two facts stay independent at the call site.
+    let drawsPeriodKey = hasPeriodKey && plane == .letters
+    self.hasPeriodKey = drawsPeriodKey
     self.width = width
     self.plane = plane
 
@@ -292,9 +339,17 @@ public struct KeyboardGeometry: Sendable {
       ? width * StockMetrics.splitPlaneKeyWidthFraction
       : width * StockMetrics.planeKeyWidthFraction
     let globeWidth = hasGlobeKey ? width * StockMetrics.globeKeyWidthFraction : 0
-    let returnWidth = width * StockMetrics.returnWidthFraction
+    // An address field spends part of the return key and part of the space bar on a
+    // period key: stock narrows the return from 300/1290 to 203/1290 and puts a 107/1290
+    // cap in the gap that opens up.
+    let returnWidth =
+      width
+      * (drawsPeriodKey
+        ? StockMetrics.returnWidthWithPeriodFraction : StockMetrics.returnWidthFraction)
+    let periodWidth = drawsPeriodKey ? width * StockMetrics.periodKeyWidthFraction : 0
     let leadingWidth = hasGlobeKey ? planeWidth + gap + globeWidth : planeWidth
-    let spaceWidth = width - 2 * margin - leadingWidth - returnWidth - 2 * gap
+    let trailingWidth = drawsPeriodKey ? periodWidth + gap + returnWidth : returnWidth
+    let spaceWidth = width - 2 * margin - leadingWidth - trailingWidth - 2 * gap
     keys.append(
       Key(
         id: KeyID(row: 3, index: 0),
@@ -317,9 +372,19 @@ public struct KeyboardGeometry: Sendable {
         frame: CGRect(
           x: margin + leadingWidth + gap, y: rowTop(3), width: spaceWidth, height: rowHeight),
       ))
+    if drawsPeriodKey {
+      keys.append(
+        Key(
+          id: KeyID(row: 3, index: 3),
+          role: .punctuation("."),
+          frame: CGRect(
+            x: width - margin - returnWidth - gap - periodWidth, y: rowTop(3),
+            width: periodWidth, height: rowHeight),
+        ))
+    }
     keys.append(
       Key(
-        id: KeyID(row: 3, index: 3),
+        id: KeyID(row: 3, index: 4),
         role: .newline,
         frame: CGRect(
           x: width - margin - returnWidth, y: rowTop(3), width: returnWidth, height: rowHeight),
