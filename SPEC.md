@@ -1323,12 +1323,12 @@ fitted to no data could only move it off.
 
 **What the built keyboard then rendered, which is not quite what the arithmetic said.**
 
-    host       stock cap   before      after
-    Safari     #404041     #404041     #3F3F40   (one unit low on every channel)
-    Contacts   #3D3D3D     #404041     #3D3D3D   (exact)
+    state                          stock cap   before      after
+    Safari, start page             #404041     #404041     #3F3F40   (one unit low)
+    Contacts, the list             #3D3D3D     #404041     #3D3D3D   (exact)
+    Contacts, "No Results"         #3D3D3D     #404041     #3C3C3C   (one unit low)
 
-Strictly better — one host exact and one off by a unit, against one exact and one off by
-three — and left there. The single unit is smaller than the three-unit gap A.4 measures
+Strictly better — never more than one unit out, against three — and left there. The single unit is smaller than the three-unit gap A.4 measures
 between two capture pipelines rendering the same colour, and raising `C` to close it in
 Safari pushes Contacts off by the same unit in the other direction, which is a trade and not
 a fix. **The cause of the unit is not established.** The likeliest candidate is the cap's
@@ -1337,6 +1337,50 @@ over the plate colour sampled from the gap between rows; that was not tested.
 
 **What was not tried:** whether the drift is larger over a backdrop that is not mostly
 white or mostly black, and any host other than Contacts for the paint-removed build.
+
+### A.12 — the pressed cap, which a screenshot turned out to be able to show
+
+A.4 recorded one value as unmeasurable: "the dark pressed state: a static screenshot cannot
+show a key being held". That was true of a screenshot taken by hand and untrue of one taken
+by a script. `tools/tap.swift` posts the mouse-down, waits, and posts the mouse-up
+separately, so the hold is an interval you control — post the down, sleep, `xcrun simctl io
+screenshot`, then let the up fire.
+
+Measured 2026-09-06 on the **stock** keyboard, in a Contacts search field, delete held for
+two seconds and the capture taken at 0.7s. Sampled at four corners of the cap, flat across
+all of them.
+
+    appearance   plate      stock pressed   what this keyboard drew
+    dark         #171717    #7D7D7D         #6B6B6B  (18 units too dark)
+    light        #E2E4E8    #C5C5C9         #D9DEE3  (20 too light, and blue where
+                                                      stock is very nearly neutral)
+
+Both are now the measured values.
+
+**The press has to actually take, or the cap does not change.** Three earlier attempts read
+nothing: delete held on an empty field, the search return key, and a letter. The first two
+produced no highlight at all, and whether that is because nothing happened or because stock
+does not highlight those was not separated. The one that worked has text in the field, and
+`press6.png` shows it plainly — the field mid-repeat at "He", the delete cap lit, stock's
+own suggestions in the bar. **When a press-state capture reads the same as the resting one,
+suspect the press before you believe the colour.**
+
+**Stock's own pressed cap does not clear 4.5:1, and the test now says so.**
+`everyCapIsLegibleInBothAppearances` held every cap to WCAG AA against the glyph on it, and
+`#7D7D7D` under a white glyph is 4.17:1. The old constant passed that bar by being 18 units
+darker than stock — which is to say the keyboard was diverging from what it is copying in
+order to satisfy a threshold this project chose. The floor is kept and lowered to 3:1 for
+the pressed state only, at the level stock actually reaches; the resting cap still has to
+clear 4.5. The state lasts as long as a finger is down, and the finger is on the glyph.
+
+**It is not the resting wash.** A.11 identifies the resting dark cap as `a = 0.25` over
+`#AFAFAF`. Matching `#7D7D7D` over a `#171717` plate with that same `a` would need
+`C = 431`, which is not a colour. Whether the pressed cap is a wash with some other `a`
+could not be decided: it needs two backdrops, and in dark appearance every host tried
+except Safari's start page reads `#171717`, while Safari's start page turns into its
+suggestion list the moment a character is typed — and a character has to be typed for the
+delete press to take at all. So the constants above are opaque, and the plate each was read
+over is recorded so a wash can be fitted later without re-measuring the first point.
 
 ## Appendix B — sources
 

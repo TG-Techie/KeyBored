@@ -605,9 +605,10 @@ final class KeyboardView: UIView {
   /// `#434343` and reading `#434343` back out of the simulator is what says the simulator
   /// capture is faithful, so the simulator pair is the one that can be compared.
   ///
-  /// The only value not measured is the dark pressed state: a static screenshot cannot
-  /// show a key being held, and stock lightens a cap on press in dark mode where it
-  /// darkens one in light mode.
+  /// Every value here is now measured, including the pressed state, which this comment
+  /// used to call unmeasurable because a static screenshot cannot show a key being held.
+  /// A scripted one can: see `pressedKeyColor` below and SPEC.md Appendix A.12. Stock does
+  /// lighten a cap on press in dark and darken one in light, and both are measurements.
   static let plateColor = dynamic(
     light: UIColor(red: 0.875, green: 0.878, blue: 0.902, alpha: 1),
     dark: UIColor(red: 0.106, green: 0.106, blue: 0.114, alpha: 1),
@@ -659,10 +660,32 @@ final class KeyboardView: UIView {
   /// It is `systemBlue`'s light value, and stock does not switch to the dark one.
   static let actionKeyColor = UIColor(red: 0, green: 0.478, blue: 1, alpha: 1)
 
-  /// The light value is sampled; the dark one is chosen, for the reason above.
+  /// A cap while a finger is on it. **Both values are now measured**, and both were wrong.
+  ///
+  /// The comment here used to say a static screenshot cannot show a key being held, so the
+  /// dark value was chosen and the light one sampled from an unheld capture. A screenshot
+  /// can show it: post the mouse-down, wait, screenshot, then post the mouse-up — the hold
+  /// is the interval you control (SPEC.md Appendix A.9). Measured 2026-09-06 on the stock
+  /// keyboard, delete held with text in the field so the press actually took, sampled at
+  /// four corners of the cap and flat across all of them:
+  ///
+  ///                    stock       what this drew
+  ///     dark           #7D7D7D     #6B6B6B    (18 units too dark)
+  ///     light          #C5C5C9     #D9DEE3    (20 units too light, and blue where
+  ///                                            stock is very nearly neutral)
+  ///
+  /// Held opaque rather than washed like `capMaterial`. One backdrop was measured per
+  /// appearance, which cannot determine a wash — but it can rule one out: with the
+  /// resting wash's own `a = 0.25`, matching `#7D7D7D` over a `#171717` plate would need
+  /// `C = 431`, and there is no such colour. So the pressed cap is **not** the resting
+  /// wash, and what it is instead is not established.
+  ///
+  /// The dark value was read over a `#171717` plate and the light one over `#E2E4E8`.
+  /// If it turns out to be a wash after all, those are the plates these constants are
+  /// exact over.
   static let pressedKeyColor = dynamic(
-    light: UIColor(red: 0.85, green: 0.87, blue: 0.89, alpha: 1),
-    dark: UIColor(white: 0.42, alpha: 1),
+    light: UIColor(red: 197 / 255, green: 197 / 255, blue: 201 / 255, alpha: 1),
+    dark: UIColor(white: 125 / 255, alpha: 1),
   )
 
   /// The glyph on a cap, and the text in the candidate bar. Explicit rather than

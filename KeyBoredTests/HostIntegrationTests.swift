@@ -88,10 +88,15 @@ private func contrast(_ one: UIColor, _ other: UIColor) -> CGFloat {
     let traits = UITraitCollection(userInterfaceStyle: style)
     let text = KeyboardView.keyTextColor.resolvedColor(with: traits)
 
-    for background in [KeyboardView.capColor, KeyboardView.pressedKeyColor] {
-      let cap = background.resolvedColor(with: traits)
-      #expect(contrast(text, cap) >= 4.5)
-    }
+    #expect(contrast(text, KeyboardView.capColor.resolvedColor(with: traits)) >= 4.5)
+
+    // The pressed cap is held to 3:1, not 4.5, and the reason is that 4.5 is a bar stock
+    // itself does not clear. Measured 2026-09-06 (SPEC.md A.12), stock's dark pressed cap
+    // is `#7D7D7D`, which is 4.17:1 against the white glyph on it. This keyboard used to
+    // pass 4.5 here by drawing a pressed cap 18 units darker than stock's, which is not a
+    // legibility win worth a visible divergence: the state lasts as long as a finger is
+    // down, and the finger is on the glyph. The floor stays, at the level stock reaches.
+    #expect(contrast(text, KeyboardView.pressedKeyColor.resolvedColor(with: traits)) >= 3.0)
 
     // The action return key carries its own foreground because it carries its own fill,
     // and it is the same blue in both appearances, so it has to be legible in both.
