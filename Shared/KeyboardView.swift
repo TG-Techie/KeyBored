@@ -25,9 +25,24 @@ final class KeyboardView: UIView {
   /// What the field asked its return key to be.
   private var returnKey: DocumentTraits.ReturnKey = .newline
 
+  /// Whether the action return key is greyed out. See `KeyboardController.returnKeyIsDimmed`.
+  private var returnKeyIsDimmed = false
+
   /// A field that asked for `Go`, `Search`, `Send` and the rest gets stock's blue return
-  /// key; a field that said nothing gets the grey one with the ↵ glyph.
-  private var isActionReturn: Bool { returnKey.isAction }
+  /// key; a field that said nothing gets the grey one with the ↵ glyph; and an action key
+  /// that has nothing to submit yet gets greyed out.
+  private var returnAppearance: ReturnKeyAppearance {
+    guard returnKey.isAction else { return .plain }
+    return returnKeyIsDimmed ? .dimmedAction : .action
+  }
+
+  /// How the return key is drawn. Three states rather than two booleans, because a plain
+  /// `↵` key is never dimmed and a pair of flags would let it be.
+  enum ReturnKeyAppearance {
+    case plain
+    case action
+    case dimmedAction
+  }
 
   var onKey: ((Key, CGPoint) -> Void)?
   var onBubble: ((String) -> Void)?
@@ -116,7 +131,9 @@ final class KeyboardView: UIView {
       || geometry?.plane != controller.geometry.plane
       || geometry?.hasGlobeKey != controller.geometry.hasGlobeKey
       || returnKey != controller.traits.returnKey
+      || returnKeyIsDimmed != controller.returnKeyIsDimmed
     {
+      returnKeyIsDimmed = controller.returnKeyIsDimmed
       configure(
         geometry: controller.geometry,
         shift: controller.shift,
@@ -174,12 +191,12 @@ final class KeyboardView: UIView {
       let cap = KeyCap(frame: key.frame)
       cap.label.text = title(for: key)
       cap.label.font = .systemFont(ofSize: key.letter != nil ? 25 : 18)
-      cap.label.textColor = Self.foregroundColor(for: key, isActionReturn: isActionReturn)
-      cap.glyph.tintColor = Self.foregroundColor(for: key, isActionReturn: isActionReturn)
+      cap.label.textColor = Self.foregroundColor(for: key, appearance: returnAppearance)
+      cap.glyph.tintColor = Self.foregroundColor(for: key, appearance: returnAppearance)
       cap.glyph.image = symbolName(for: key).flatMap {
         UIImage(systemName: $0, withConfiguration: Self.symbolConfiguration)
       }
-      cap.backgroundColor = Self.restingColor(for: key, isActionReturn: isActionReturn)
+      cap.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
       cap.isAccessibilityElement = true
       cap.accessibilityTraits = .keyboardKey
       cap.accessibilityLabel = accessibilityLabel(for: key)
@@ -551,7 +568,7 @@ final class KeyboardView: UIView {
     guard let touch = touches.first, let geometry else { return }
     let point = touch.location(in: self)
     guard let key = geometry.hitTest(point) else { return }
-    keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, isActionReturn: isActionReturn)
+    keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
     // The point is passed on untouched. Rounding it to the key here would throw away
     // the only signal the matcher runs on.
     onKey?(key, point)
@@ -563,7 +580,7 @@ final class KeyboardView: UIView {
     stopDeleteRepeat()
     guard let geometry else { return }
     for key in geometry.keys {
-      keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, isActionReturn: isActionReturn)
+      keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
     }
   }
 
@@ -660,6 +677,33 @@ final class KeyboardView: UIView {
   /// It is `systemBlue`'s light value, and stock does not switch to the dark one.
   static let actionKeyColor = UIColor(red: 0, green: 0.478, blue: 1, alpha: 1)
 
+  /// The same key with nothing yet to submit, which stock greys out rather than hiding.
+  ///
+  /// Measured 2026-09-06 on the stock keyboard in a freshly presented Contacts search
+  /// field, before any key was struck (SPEC.md Appendix A.13):
+  ///
+  ///                    fill        glyph      over a plate of
+  ///     dark           #747474     #818181    #171717
+  ///     light          #C0C2C5     #ADAEB1    #E1E3E6
+  ///
+  /// The glyph is nineteen units lighter than its cap in dark and nineteen darker in
+  /// light — about 1.1:1 either way, which is not a legibility failure to be fixed but the
+  /// whole point of a disabled control. `everyCapIsLegibleInBothAppearances` exempts this
+  /// pair and says why.
+  ///
+  /// Opaque, like `pressedKeyColor` and for the same reason: one backdrop per appearance
+  /// was measured, which cannot determine a wash. The plate each was read over is recorded
+  /// above so the fit can be finished later without re-measuring.
+  static let dimmedActionKeyColor = dynamic(
+    light: UIColor(red: 192 / 255, green: 194 / 255, blue: 197 / 255, alpha: 1),
+    dark: UIColor(white: 116 / 255, alpha: 1),
+  )
+
+  static let dimmedActionKeyTextColor = dynamic(
+    light: UIColor(red: 173 / 255, green: 174 / 255, blue: 177 / 255, alpha: 1),
+    dark: UIColor(white: 129 / 255, alpha: 1),
+  )
+
   /// A cap while a finger is on it. **Both values are now measured**, and both were wrong.
   ///
   /// The comment here used to say a static screenshot cannot show a key being held, so the
@@ -718,16 +762,29 @@ final class KeyboardView: UIView {
     UIColor { traits in traits.userInterfaceStyle == .dark ? dark : light }
   }
 
-  /// The background a cap of this key should have when it is not pressed. The action
-  /// return key is the only cap whose colour depends on anything.
-  static func restingColor(for key: Key, isActionReturn: Bool = false) -> UIColor {
-    key.role == .newline && isActionReturn ? actionKeyColor : capMaterial
+  /// The background a cap of this key should have when it is not pressed. The return key
+  /// is the only cap whose colour depends on anything.
+  static func restingColor(for key: Key, appearance: ReturnKeyAppearance = .plain) -> UIColor {
+    guard key.role == .newline else { return capMaterial }
+    switch appearance {
+    case .plain: return capMaterial
+    case .action: return actionKeyColor
+    case .dimmedAction: return dimmedActionKeyColor
+    }
   }
 
   /// What a cap draws its glyph in. White on the action return key in both appearances,
-  /// because that cap is blue in both.
-  static func foregroundColor(for key: Key, isActionReturn: Bool = false) -> UIColor {
-    key.role == .newline && isActionReturn ? .white : keyTextColor
+  /// because that cap is blue in both; and barely distinguishable from its own cap when
+  /// that key is dimmed, because that is what stock draws.
+  static func foregroundColor(
+    for key: Key, appearance: ReturnKeyAppearance = .plain
+  ) -> UIColor {
+    guard key.role == .newline else { return keyTextColor }
+    switch appearance {
+    case .plain: return keyTextColor
+    case .action: return .white
+    case .dimmedAction: return dimmedActionKeyTextColor
+    }
   }
 }
 

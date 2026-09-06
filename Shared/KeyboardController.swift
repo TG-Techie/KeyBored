@@ -74,16 +74,25 @@ public struct DocumentTraits: Sendable, Equatable {
   /// decided and what was measured; this is only the field's veto.
   public var smartQuotes: Bool
 
+  /// The field asked for its return key to be disabled while there is nothing to submit,
+  /// which is `UITextInputTraits.enablesReturnKeyAutomatically`.
+  ///
+  /// The name is UIKit's and the behaviour drawn from it is stock's, and the two do not
+  /// quite agree — see `returnKeyIsDimmed`, which is where the observed rule lives.
+  public var enablesReturnKeyAutomatically: Bool
+
   public init(
     autocapitalization: Autocapitalization = .sentences,
     returnKey: ReturnKey = .newline,
     isSecure: Bool = false,
     smartQuotes: Bool = true,
+    enablesReturnKeyAutomatically: Bool = false,
   ) {
     self.autocapitalization = autocapitalization
     self.returnKey = returnKey
     self.isSecure = isSecure
     self.smartQuotes = smartQuotes
+    self.enablesReturnKeyAutomatically = enablesReturnKeyAutomatically
   }
 
   /// What holds when the field says nothing. `.sentences` is UIKit's own documented
@@ -188,6 +197,35 @@ public final class KeyboardController {
   /// `DocumentTraits`; `.unspecified` until a document has been looked at.
   public private(set) var traits: DocumentTraits = .unspecified
 
+  /// Whether anything has been typed since the keyboard came up. Drives
+  /// `returnKeyIsDimmed`, and nothing else.
+  public private(set) var hasTypedSincePresentation = false
+
+  /// Whether the action return key is drawn greyed out.
+  ///
+  /// Stock does this and the rule is not the one the trait's name suggests. Measured
+  /// 2026-09-06 in a Contacts search field (SPEC.md Appendix A.13): a freshly presented
+  /// keyboard on an empty field draws the search key grey; the first keystroke turns it
+  /// blue; **deleting back to an empty field leaves it blue**, for the rest of that
+  /// presentation; and dismissing and re-presenting greys it again. So it is not "there
+  /// is nothing to submit", which would go back to grey — it is "nothing has been typed
+  /// yet", which latches.
+  ///
+  /// Gated on the field's own trait rather than applied everywhere, because Safari's
+  /// address bar is empty on a fresh presentation and stock draws its arrow blue there.
+  /// Only the action return keys dim; whether stock also dims a plain `↵` in a field that
+  /// sets the trait was not tested, and no field that does both was found.
+  public var returnKeyIsDimmed: Bool {
+    traits.returnKey.isAction && traits.enablesReturnKeyAutomatically
+      && !hasTypedSincePresentation
+  }
+
+  /// The keyboard has just been put on screen. Re-arms the dimmed return key.
+  public func didPresent() {
+    hasTypedSincePresentation = false
+    refresh()
+  }
+
   /// Whether the layout carries the globe key, from the host's
   /// `needsInputModeSwitchKey`. It changes the geometry rather than only the drawing,
   /// because the globe takes stock's emoji slot and the space bar starts after it.
@@ -269,7 +307,7 @@ public final class KeyboardController {
       if plane == .letters {
         guard let neighborhood = predictor.matcher.neighborhood(for: point) else { return }
         word.append(neighborhood, casing: shift.wordCasing)
-        document?.insertText(String(cased(neighborhood.literal)))
+        insert(String(cased(neighborhood.literal)))
         // Shift is a one-shot: it applies to the letter that follows it and then
         // releases, which is what the stock keyboard does — except in a field that asked
         // for `.allCharacters`, where releasing it would fight the field on every key.
@@ -282,7 +320,7 @@ public final class KeyboardController {
         // — see `SmartPunctuation`.
         endWord()
         let previous = document?.textBeforeInput?.last
-        document?.insertText(
+        insert(
           traits.smartQuotes
             ? SmartPunctuation.text(for: letter, after: previous)
             : SmartPunctuation.plain(for: letter))
@@ -297,13 +335,13 @@ public final class KeyboardController {
 
     case .space:
       commitWord()
-      document?.insertText(" ")
+      insert(" ")
       updateAutoShift()
       refresh()
 
     case .newline:
       commitWord()
-      document?.insertText("\n")
+      insert("\n")
       updateAutoShift()
       refresh()
 
@@ -349,7 +387,7 @@ public final class KeyboardController {
     guard !word.isEmpty else { return }
     let text = word.cased(text)
     for _ in 0..<word.tapCount { document?.deleteBackward() }
-    document?.insertText(text)
+    insert(text)
     endWord()
     updateAutoShift()
     refresh()
@@ -386,6 +424,15 @@ public final class KeyboardController {
       document?.insertText(word.cased(text))
     }
     endWord()
+  }
+
+  /// Every insertion the user asked for, in one place, so that "has anything been typed"
+  /// has somewhere to be recorded. `commitWord`'s own rewrite deliberately does not go
+  /// through here: it is this keyboard correcting what the user already typed, and the tap
+  /// that triggered it came through one of these.
+  private func insert(_ text: String) {
+    hasTypedSincePresentation = true
+    document?.insertText(text)
   }
 
   private func endWord() {

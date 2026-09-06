@@ -102,6 +102,19 @@ private func contrast(_ one: UIColor, _ other: UIColor) -> CGFloat {
     // and it is the same blue in both appearances, so it has to be legible in both.
     #expect(contrast(.white, KeyboardView.actionKeyColor) >= 3.0)
 
+    // The dimmed action return key is exempt, and deliberately so: stock draws its glyph
+    // about 1.1:1 against its own cap, which is what a disabled control looks like. The
+    // assertion that is worth making is that it is *not* legible in the way an enabled key
+    // is, so that a future change cannot quietly make the two states look alike.
+    let dimmed = KeyboardView.dimmedActionKeyColor.resolvedColor(with: traits)
+    let dimmedGlyph = KeyboardView.dimmedActionKeyTextColor.resolvedColor(with: traits)
+    #expect(contrast(dimmedGlyph, dimmed) < 1.5)
+    // And it has to be a different key from the enabled one. Stated as inequality rather
+    // than as a contrast ratio, which is the wrong instrument: grey against `#007AFF` is
+    // 1.16:1 in dark because the two happen to sit at the same luminance, and they are
+    // still nothing alike to look at.
+    #expect(dimmed != KeyboardView.actionKeyColor)
+
     let bar = KeyboardView.barTextColor.resolvedColor(with: traits)
     let plate = KeyboardView.plateColor.resolvedColor(with: traits)
     #expect(contrast(bar, plate) >= 4.5)

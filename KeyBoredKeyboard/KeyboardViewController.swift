@@ -119,6 +119,9 @@ final class KeyboardViewController: UIInputViewController {
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     heightConstraint.isActive = true
+    // A presentation is what re-arms the dimmed return key, and this is the only notice
+    // of one the extension gets. SPEC.md Appendix A.13.
+    controller.didPresent()
   }
 
   /// The system's only notice that the field being typed into is not what it was.
@@ -219,6 +222,7 @@ private final class ProxyDocument: TextDocument {
       returnKey: Self.returnKey(proxy.returnKeyType),
       isSecure: proxy.isSecureTextEntry ?? false,
       smartQuotes: Self.smartQuotes(proxy.smartQuotesType),
+      enablesReturnKeyAutomatically: proxy.enablesReturnKeyAutomatically ?? false,
     )
   }
 

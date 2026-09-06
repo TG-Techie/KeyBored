@@ -1024,14 +1024,16 @@ keyboard draws their words on the blue cap and `KeyboardView.returnKeySymbol` sa
 that guessing a symbol name for them is the kind of thing that looks right in the source and
 wrong on a phone.
 
-**Stock does not dim the action key on an empty field**, and the note that said it did was
-wrong. One early capture (`c3.png`) showed the search key grey at `#747474` over an empty
-Contacts field, which read as `enablesReturnKeyAutomatically`. Going back deliberately did
-not reproduce it: Contacts light and Contacts dark both read `#007AFF` on an empty field,
-and Safari's `.go` key read `#007AFF` both with `https://example.com` in the bar and after
-clearing it to the bare placeholder. The grey was a frame of the keyboard's presentation
-animation, caught by a screenshot taken too early. Nothing to implement, and one fewer
-open question.
+**Stock does dim the action key, and neither of the two earlier notes had the rule.**
+The first said it dims on an empty field; the second retracted that, because going back
+deliberately read `#007AFF` on an empty Contacts field in both appearances, and Safari's
+`.go` key read `#007AFF` with `https://example.com` in the bar and after clearing it. The
+retraction attributed the grey to a frame of the presentation animation. Both notes were
+fitting a rule to one variable while a second one moved unwatched: the state is a latch on
+whether anything has been typed since the keyboard was presented, so an empty field reads
+grey on a fresh presentation and blue once you have typed and deleted. The early capture
+`c3.png` was correct, and its `#747474` is the exact value A.13 measures. **A.13 has the
+four states, the four colours and what the keyboard now does with them.**
 
 
 ### A.6 — the cap itself, ours beside stock in one pipeline
@@ -1187,14 +1189,18 @@ not one colour in every context. **Resolved by A.11: the second half is the answ
 neither reading is wrong.** Both stock numbers stand as readings of different backdrops.
 
 **Whether stock dims the return key on an empty field is open, and the evidence is
-contradictory.** A.5 recorded that it does not, retracting an earlier note that said it
+contradictory. Resolved by A.13: it is not the field being empty, it is the field's
+`enablesReturnKeyAutomatically` trait plus whether anything has been typed since this
+presentation.** A.5 recorded that it does not, retracting an earlier note that said it
 does. On 2026-09-06 an empty Contacts search field was captured twice, both on a settled
 screen and minutes apart: once with the magnifier on grey and once with it on `#007AFF`.
 So the grey is real and is not only a frame of the presentation animation, but it is not a
 function of the field being empty either, and nothing here says what it *is* a function of.
 **Do not implement `enablesReturnKeyAutomatically` on the strength of this.** What would
 settle it is a capture of the same field in both states with the difference in the field
-recorded, which is a small experiment nobody has run.
+recorded, which is a small experiment nobody has run. It has now been run; A.13 is the
+result, and the two captures above are the two sides of the latch rather than a
+contradiction.
 
 ### A.10 — the quote keys, read off the pasteboard rather than off a screenshot
 
@@ -1381,6 +1387,58 @@ except Safari's start page reads `#171717`, while Safari's start page turns into
 suggestion list the moment a character is typed — and a character has to be typed for the
 delete press to take at all. So the constants above are opaque, and the plate each was read
 over is recorded so a wash can be fitted later without re-measuring the first point.
+
+### A.13 — the dimmed return key, which is a latch and not a test of the field
+
+A.9 left this open with two captures of the same empty Contacts search field disagreeing
+with each other. Both were right. The state is not "the field is empty" — it is "nothing has
+been typed since this keyboard was presented", which an empty field satisfies on a fresh
+presentation and stops satisfying the moment you type, and keeps not satisfying after you
+delete back to empty.
+
+Measured 2026-09-06 on the **stock** keyboard, Contacts search field, keyboard identity
+confirmed from the globe long-press list before each reading:
+
+    what was done                     return key
+    presented, field empty            grey
+    one character typed               #007AFF
+    that character deleted, empty     #007AFF   (stays; the latch does not reset)
+    dismissed and presented again     grey
+
+**It is field-gated, not universal.** Safari's URL bar, empty and freshly presented, is
+`#007AFF`. So the rule is the field's `enablesReturnKeyAutomatically` trait and not a
+property of emptiness, and a keyboard that dimmed on "the document is empty" would be wrong
+in Safari — which is exactly what a reading of A.9 without this appendix would have built.
+
+The four colours, each with the plate it was read over, because A.11's lesson is that a cap
+colour is meaningless without its backdrop:
+
+    appearance   plate      dimmed fill   dimmed glyph
+    dark         #171717    #747474       #818181
+    light        #E1E3E6    #C0C2C5       #ADAEB1
+
+`KeyboardView.dimmedActionKeyColor` and `dimmedActionKeyTextColor` are those values,
+**opaque**, for A.12's reason: one backdrop per appearance cannot separate a wash from a
+solid, and inventing an `a` to fit a single point fits anything. The plates are recorded so
+whoever finds a second backdrop can fit one without re-measuring the first.
+
+**The glyph is deliberately illegible, and the test says so out loud.** Stock's dimmed glyph
+against stock's dimmed cap is about 1.1:1 — the point of the state is that the key reads as
+unavailable. `everyCapIsLegibleInBothAppearances` therefore asserts the opposite bound for
+this pair, `< 1.5:1`, rather than exempting it silently. It also asserts the dimmed fill is
+*not* `actionKeyColor`, as an inequality: a luminance contrast ratio is the wrong instrument
+for telling grey from blue, and `1.16` between them proves nothing either way.
+
+The keyboard reproduces the latch with `KeyboardController.hasTypedSincePresentation`, set
+by every insertion that goes through the `insert(_:)` funnel and cleared by `didPresent()`,
+which `KeyboardViewController.viewDidAppear` calls. The rewrite in `commitWord` bypasses the
+funnel on purpose: replacing what you already typed is not typing something new, and stock
+does not un-latch either.
+
+**Not tested: whether stock also dims a plain `↵`** — a return key whose trait is `.default`
+rather than an action word — in a field that sets `enablesReturnKeyAutomatically`. No field
+doing both was found on this device, so the keyboard dims only action return keys, which is
+what was observed rather than what was generalised from it.
 
 ## Appendix B — sources
 
