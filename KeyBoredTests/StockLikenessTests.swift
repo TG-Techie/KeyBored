@@ -176,7 +176,7 @@ private func type(_ characters: String, on controller: KeyboardController) {
   let plain = view(.unspecified)
   #expect(plain.returnKeyTitleForTesting == "")
   #expect(plain.returnKeyHasGlyphForTesting)
-  #expect(plain.returnKeyColorForTesting == KeyboardView.capColor)
+  #expect(plain.returnKeyColorForTesting == KeyboardView.capMaterial)
 }
 
 @MainActor

@@ -641,15 +641,15 @@ only in the same breath as Full Access, since without it the group buys nothing.
 
 ### Open
 
-9. **Stock's caps are slightly translucent and these are painted.** The same stock cap
-   reads `#404041` over the Contacts list and `#3D3D3D` over a Safari page; ours reads
-   `#404041` over both. Appendix A.6 has the measurement. **The plate half of this is
-   done** — `UIInputViewController`'s `view` is already a `UIInputView` drawing the
-   material, so the fix was to stop painting over it, and the plate is now byte-identical
-   to stock on every backdrop measured (A.11). The caps are not, and there is no
-   documented system view for a key cap the way there is for the background, so matching
-   them means guessing a `UIVisualEffectView` style — and a guess that is close is worse
-   than a measured constant that is three units off.
+9. **Stock's caps are slightly translucent and these were painted. Both halves are now
+   done, and neither needed the structural change this entry expected.** The plate: an
+   `UIInputViewController`'s `view` already *is* a `UIInputView` drawing the keyboard
+   material, so the fix was to stop painting over it, and the plate is byte-identical to
+   stock on every backdrop measured. The caps: a wash can be identified from two states
+   without knowing which effect style draws it, and `a = 0.25` over `#AFAFAF` predicts all
+   six measured channels. The dark cap is now exact over a black-backed host and one unit
+   low over Safari, against three units before. A.11 has the numbers, the residual, and
+   the reason light stays opaque white.
 10. **Delete repeats but does not accelerate.** Stock waits about four tenths of a second,
     repeats about ten times a second, and after a few seconds starts taking whole words.
     This does the first two. The third has not been timed off a stock keyboard, and
@@ -1294,12 +1294,46 @@ measured here, because there was never a value that would.
 `KeyboardView.plateColor` is kept. The container app draws the same `KeyboardView` on an
 ordinary view with no material behind it, and there a painted colour is the right thing.
 
-**The caps are the same problem and are not fixed.** In the dark pair above, ours reads
-`#404041` where stock reads `#3D3D3D` — our constant against stock's material, exactly as
-with the plate. There is no documented system view for a key cap the way `UIInputView` is
-one for the background, so matching it means guessing at a `UIVisualEffectView` style, and a
-guess that is close is worse than a measured constant that is three units off. Section 10
-keeps it as an open question, now with a number attached.
+**The caps are the same problem, and they turned out to be solvable by arithmetic rather
+than by guessing.** There is no documented system view for a key cap the way `UIInputView`
+is one for the background, and picking a `UIVisualEffectView` style by eye would have been a
+guess. But a wash does not need a style to be identified — it needs two states. Dark
+appearance, three hosts, stock and this keyboard in the same field minutes apart, identity
+checked from the globe's list every time:
+
+    host                       plate      stock cap   BoreKey cap, before
+    Safari, the start page     #1B1B1D    #404041     #404041
+    Contacts, the list         #171717    #3D3D3D     #404041
+    Settings, the list         #171717    #3D3D3D     #404041
+
+Solving `cap = a·C + (1 - a)·plate` on the red and green channels of the two distinct states
+gives `a = 0.25` and `C = 175`, and that pair then **predicts both blue channels exactly** —
+`0.25·175 + 0.75·29 = 65` and `0.25·175 + 0.75·23 = 61`, against the `#404041` and `#3D3D3D`
+measured. Two parameters, six numbers, no residual. So stock's dark cap is a quarter of
+`#AFAFAF` over whatever is underneath, and `KeyboardView.capMaterial` is now that.
+
+Note what the third column says: the old constant was not wrong, it was *right for one
+host*. It was sampled over Safari and it is exact there. Every host with a black backdrop is
+where it drifted.
+
+**Light stays opaque white and that is also a measurement.** Stock's light cap reads
+`#FFFFFF` over both light plates measured; white is the ceiling, a saturated channel carries
+no signal to fit a wash to, and ours is already byte-equal to stock there (A.6). A wash
+fitted to no data could only move it off.
+
+**What the built keyboard then rendered, which is not quite what the arithmetic said.**
+
+    host       stock cap   before      after
+    Safari     #404041     #404041     #3F3F40   (one unit low on every channel)
+    Contacts   #3D3D3D     #404041     #3D3D3D   (exact)
+
+Strictly better — one host exact and one off by a unit, against one exact and one off by
+three — and left there. The single unit is smaller than the three-unit gap A.4 measures
+between two capture pipelines rendering the same colour, and raising `C` to close it in
+Safari pushes Contacts off by the same unit in the other direction, which is a trade and not
+a fix. **The cause of the unit is not established.** The likeliest candidate is the cap's
+own drop shadow darkening the material directly under it, so the wash is not compositing
+over the plate colour sampled from the gap between rows; that was not tested.
 
 **What was not tried:** whether the drift is larger over a backdrop that is not mostly
 white or mostly black, and any host other than Contacts for the paint-removed build.

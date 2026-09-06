@@ -99,7 +99,7 @@ final class KeyboardView: UIView {
   }
 
   @objc private func globeTouchUp() {
-    globeCap?.backgroundColor = Self.capColor
+    globeCap?.backgroundColor = Self.capMaterial
   }
 
   private var globeCap: KeyCap? { cap(for: .nextKeyboard) }
@@ -612,9 +612,46 @@ final class KeyboardView: UIView {
     light: UIColor(red: 0.875, green: 0.878, blue: 0.902, alpha: 1),
     dark: UIColor(red: 0.106, green: 0.106, blue: 0.114, alpha: 1),
   )
+  /// One cap colour, kept for the places where there is nothing underneath to wash over:
+  /// the key preview, which floats above the keyboard and over the host's own content, and
+  /// the contrast assertions, which need a colour rather than a material. It is what
+  /// `capMaterial` below composites to over stock's Safari-host plate, so the two agree
+  /// wherever they can both be applied.
   static let capColor = dynamic(
     light: .white,
     dark: UIColor(red: 0.251, green: 0.251, blue: 0.255, alpha: 1),
+  )
+
+  /// What a cap is actually painted with: a material in dark, and plain white in light.
+  ///
+  /// `capColor` above is one colour, and stock's cap is not one colour — it is a wash over
+  /// the keyboard material, so it moves when the host's content behind the keyboard moves,
+  /// exactly as the plate does (SPEC.md Appendix A.11). Measured on 2026-09-06 in dark
+  /// appearance, this keyboard and stock in the same field minutes apart, identity checked
+  /// from the globe's list each time:
+  ///
+  ///     host                       plate      stock cap
+  ///     Safari, the start page     #1B1B1D    #404041
+  ///     Contacts, the list         #171717    #3D3D3D
+  ///     Settings, the list         #171717    #3D3D3D
+  ///
+  /// One wash over the plate fits all six channels of those two distinct states, and it is
+  /// over-determined rather than fitted: solving `cap = a·C + (1-a)·plate` on the red and
+  /// green channels alone gives `a = 0.25` and `C = 175`, and that pair then predicts both
+  /// blue values exactly (`0.25·175 + 0.75·29 = 65`, `0.25·175 + 0.75·23 = 61`). So the
+  /// dark cap is a quarter of `#AFAFAF` laid over whatever is underneath.
+  ///
+  /// **Light stays opaque white**, which is not a shortcut: stock's light cap reads
+  /// `#FFFFFF` over both light plates measured, white is the ceiling, and there is no
+  /// signal in a saturated channel to fit a wash to. Ours is byte-equal to stock there
+  /// already (A.6) and a wash could only move it off.
+  ///
+  /// The container app draws this over its own painted `plateColor`, which is stock's
+  /// Safari-host plate, so it composites to `#404041` there — the same pixels it drew
+  /// before this existed.
+  static let capMaterial = dynamic(
+    light: .white,
+    dark: UIColor(white: 175 / 255, alpha: 0.25),
   )
 
   /// The return key when the field asked for a word — `Go`, `Search`, `Send`. Fixed
@@ -661,7 +698,7 @@ final class KeyboardView: UIView {
   /// The background a cap of this key should have when it is not pressed. The action
   /// return key is the only cap whose colour depends on anything.
   static func restingColor(for key: Key, isActionReturn: Bool = false) -> UIColor {
-    key.role == .newline && isActionReturn ? actionKeyColor : capColor
+    key.role == .newline && isActionReturn ? actionKeyColor : capMaterial
   }
 
   /// What a cap draws its glyph in. White on the action return key in both appearances,
