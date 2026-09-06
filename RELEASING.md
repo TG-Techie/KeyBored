@@ -132,6 +132,23 @@ measuring stock and reporting it as ours.
 Compare against a screenshot of the stock keyboard. A build log is not evidence of any of
 this and neither is a passing test.
 
+### The preflight
+
+Between the archive and the export, run it against the built product:
+
+    tools/preflight.sh build/KeyBored.xcarchive/Products/Applications/KeyBored.app
+
+It exits non-zero and names what is wrong. **Every assertion reads the `.app` rather than the
+source**, which is the point: each failure it checks for got past a green build, and several
+got past a full passing test suite, because what was wrong was what the build emitted and the
+source said the right thing throughout. The version stamp against `project.yml`, the version
+and build not already spent, the icon and its `Assets.car`, the orientations, the compliance
+key, the extension's display name, a clean tree, and the session trailer.
+
+It replaces a list in `sop/tools/xcode/README.md` that an agent was supposed to remember.
+Jonah, reading that list on 2026-09-05: "A lot of that could be fixed with scrips instead of
+agent softness."
+
 ### The archive
 
     xcodebuild -scheme KeyBored -destination 'generic/platform=iOS' \
