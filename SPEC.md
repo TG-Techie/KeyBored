@@ -2656,6 +2656,56 @@ a third of a point, from where the rasterizer puts ink relative to a nominal bas
 recorded rather than tuned away, because 19/3 would make the constant match our renderer
 instead of matching the measurement, and the measurement is what the next reader needs.
 
+### A.34 — the taps can say two words
+
+`isnthere` is `is there` with the space struck as an `n`. Reading it that way is a *reading
+of the taps* and not an edit bolted onto one — every tap is accounted for, none is invented
+— so it costs 1.2 against a five-hundredth of nothing and commits on the boundary like any
+other correction.
+
+**A split is built out of two things that look at what happened, and never out of the
+transition that does not.**
+
+1. **The tap that becomes the space must have the space bar in its own neighbourhood**, and
+   it is charged the distance to it exactly as any other letter would be. The space bar is
+   row 3 and a neighbourhood is the 3x3 block around the key that was struck, so only rows 2
+   and 3 carry a space candidate at all. Measured: every one of `zxcvbnm` can be read as a
+   space, none of `asdfghjkl` can.
+2. **Every other tap keeps the letter it landed on.** Each half has to be a word whose tap
+   form is exactly what those taps literally say.
+
+**The first rule is what makes `together` → `to get her` impossible rather than unlikely.**
+It would have to split at `g` or `h`, which are row 1, and it would need two spaces against
+eight taps besides.
+
+**And it is a choice, not a law.** `candidates(for:)` already contains a transition shaped
+exactly like a free space inserted anywhere at a fixed price: an omission follows a trie edge
+without consuming a tap and without ever reading a neighbourhood. Building the split on that
+would have been the shorter route and would have handed back `to get her` silently.
+`aTapAwayFromTheSpaceBarCannotSplit` is what fails if someone takes it.
+
+**The second rule came out of a real false split rather than out of caution.** With the
+halves free to be any word the search could reach, `jonah` at dead centre committed as
+`ho ah`: one tap moved from `j` to `h` at a cost of 1.0, plus the space at 1.2, against a
+five-tap slack of 2.5. A split is already one supposition about the typing; a reading that
+letters its way to two words as well is supposing twice, which is the same judgement A.29
+makes about edits. Requiring the halves to be literal stops the class and not the word.
+
+It also makes the search cheap: a split point is two lexicon lookups rather than two beam
+searches, so splits are inside invariant I11 with everything else and
+`readingAWordWithItsSplitsStaysFast` measures it.
+
+**The shape of the model.** `Reading` is `.word(entry)` or `.split(first, second)`, and three
+words are not expressible rather than being ruled out downstream. `candidates(for:)` stays
+the single-word search; `readings(for:)` is what the bar and the commit rule ask for.
+
+**Known limit: a one-letter half.** `into` reads as `i to` and `about` as `a out`, both
+edit-free and both cheap. Neither can be committed — the commit rule never replaces a word
+the user actually typed and both are real words — but both can reach the bar's right-hand
+slot. No minimum half length is imposed, because `a` and `I` are words people start sentences
+with and there is nothing measured to set a threshold from. If it turns out to matter, the
+measurement to take is which one-letter halves actually appear in real typing.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

@@ -156,7 +156,7 @@ public struct Predictor: Sendable {
   public func bar(for word: WordInProgress) -> CandidateBar {
     guard !word.isEmpty else { return .empty }
     let literal = matcher.literal(for: word.neighborhoods)
-    let candidates = matcher.candidates(for: word.neighborhoods)
+    let candidates = matcher.readings(for: word.neighborhoods)
 
     // A prediction identical to the literal is not shown twice. The literal slides
     // into the middle, where the eye is already looking, and the runner-up takes the
@@ -203,7 +203,11 @@ public struct Predictor: Sendable {
     // candidate overtake `hello` at the top of the list. Taking the best edit-free
     // candidate rather than giving up on the whole word is the same rule stated correctly.
     // SPEC.md Appendix A.29.
-    let ranked = matcher.candidates(for: word.neighborhoods)
+    // `readings` and not `candidates`: a run of taps can be two words with a space missing
+    // between them, and a split is a reading of the taps like any other. It is charged the
+    // distance from the tap to the space bar and carries no edit of its own, so it competes
+    // on the same terms and passes through every rule below unchanged. SPEC.md A.34.
+    let ranked = matcher.readings(for: word.neighborhoods)
     guard let best = ranked.first(where: { $0.edits == 0 }) else { return .literal(literal) }
     if best.text == literal { return .literal(literal) }
 

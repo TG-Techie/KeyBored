@@ -37,13 +37,56 @@ public struct TapNeighborhood: Sendable {
   public var letters: Set<Character> { Set(candidates.map(\.letter)) }
 }
 
-/// A word the matcher is proposing, and what it cost to propose it.
+/// What the matcher read a run of taps as: one word, or two words with a space between
+/// them.
+///
+/// **Two is the ceiling, and it is the same judgement that forgives one dropped letter.**
+/// A split supposes the user meant a space and did not leave one, which is one supposition
+/// about what happened; a reading with two of them supposes twice. Three words are not
+/// expressible here rather than being ruled out somewhere downstream.
+public enum Reading: Sendable, Equatable {
+  case word(LexiconEntry)
+  case split(LexiconEntry, LexiconEntry)
+
+  /// What goes into the document.
+  public var text: String {
+    switch self {
+    case .word(let entry): return entry.insertion
+    case .split(let first, let second): return "\(first.insertion) \(second.insertion)"
+    }
+  }
+
+  /// The single entry this reading is, or nothing when it is a split. A split's halves
+  /// are each a single word, and this is how the search takes them apart to build one.
+  public var singleWord: LexiconEntry? {
+    if case .word(let entry) = self { return entry }
+    return nil
+  }
+
+  /// Whether every word here inserts exactly what was tapped. Only used to break ties
+  /// towards the reading that changes nothing.
+  var isPlain: Bool {
+    switch self {
+    case .word(let entry): return entry.insertion == entry.tapForm
+    case .split(let first, let second):
+      return first.insertion == first.tapForm && second.insertion == second.tapForm
+    }
+  }
+}
+
+/// A reading the matcher is proposing, and what it cost to propose it.
 public struct Candidate: Sendable, Equatable {
-  public let entry: LexiconEntry
+  public let reading: Reading
   public let cost: Double
   public let edits: Int
 
-  public var text: String { entry.insertion }
+  public init(reading: Reading, cost: Double, edits: Int) {
+    self.reading = reading
+    self.cost = cost
+    self.edits = edits
+  }
+
+  public var text: String { reading.text }
 }
 
 /// Every number the matcher's behaviour depends on, named and in one place.
@@ -68,6 +111,7 @@ public enum Tuning {
   /// forgiven. One edit covers the overwhelming majority of real slips; allowing two
   /// multiplies the search for words nobody meant.
   public static let maxEdits = 1
+
 
   /// How many partial matches stay alive. Bounded so that typing time never depends on
   /// how many words happen to look like what is being typed.
@@ -205,7 +249,8 @@ public struct ConstellationMatcher: Sendable {
         if state.taps == tapCount {
           for index in lexicon.entryIndices(at: state.node) {
             results.append(
-              Candidate(entry: lexicon.entries[index], cost: cost, edits: state.edits))
+              Candidate(
+                reading: .word(lexicon.entries[index]), cost: cost, edits: state.edits))
           }
         }
 
@@ -251,22 +296,113 @@ public struct ConstellationMatcher: Sendable {
     // coin toss. Beyond that they break on the inserted text, never on discovery order:
     // a ranking that depends on how a dictionary happened to enumerate is not
     // mechanistically predictable, however deterministic its scores are.
-    results.sort { a, b in
-      if a.cost != b.cost { return a.cost < b.cost }
-      let aPlain = a.entry.insertion == a.entry.tapForm
-      let bPlain = b.entry.insertion == b.entry.tapForm
-      if aPlain != bPlain { return aPlain }
-      return a.entry.insertion < b.entry.insertion
-    }
+    return Self.ranked(results, limit: limit)
+  }
 
-    // One entry can be reached by several edit paths; keep only its cheapest.
+  /// Sorts readings and keeps the cheapest of each distinct text.
+  ///
+  /// Ties break first towards the reading that changes nothing — where `well` and `we'll`
+  /// match a tap sequence equally well, the plain word wins, because a keyboard whose
+  /// virtue is predictability should not reach for the apostrophe on a coin toss. Beyond
+  /// that they break on the inserted text, never on discovery order: a ranking that
+  /// depends on how a dictionary happened to enumerate is not mechanistically predictable,
+  /// however deterministic its scores are.
+  static func ranked(_ readings: [Candidate], limit: Int) -> [Candidate] {
+    var sorted = readings
+    sorted.sort { a, b in
+      if a.cost != b.cost { return a.cost < b.cost }
+      let aPlain = a.reading.isPlain
+      let bPlain = b.reading.isPlain
+      if aPlain != bPlain { return aPlain }
+      return a.text < b.text
+    }
     var seen = Set<String>()
     var unique: [Candidate] = []
-    for candidate in results where seen.insert(candidate.entry.insertion).inserted {
+    for candidate in sorted where seen.insert(candidate.text).inserted {
       unique.append(candidate)
       if unique.count == limit { break }
     }
     return unique
+  }
+
+  // MARK: - Splits
+
+  /// Readings of these taps as two words, where one tap was the space between them.
+  ///
+  /// **A split is not a transition in the search, and that is the whole design.** The beam
+  /// already has a transition shaped exactly like a free edit inserted anywhere at a fixed
+  /// price — `omissionPenalty` follows a trie edge without consuming a tap and without ever
+  /// reading a neighbourhood. Letting a space through that door would make `together` into
+  /// `to get her` for the cost of one omission, at any position, with nothing about the
+  /// typing to justify it.
+  ///
+  /// So a split is built here instead, out of the two things that do look at what happened:
+  ///
+  /// **The tap that becomes the space has to have the space bar in its own neighbourhood**,
+  /// and it is charged the same distance any other letter would be. The space bar is row 3
+  /// and `neighborhood(for:)` reads the 3x3 block around the key that was struck, so only
+  /// rows 2 and 3 carry a space candidate at all. `isnthere` splits at its `n`, which is
+  /// row 2 and sits directly above the space bar. `together` would have to split at `g` or
+  /// `h`, which are row 1 and carry no space at any price, and it would need two of them
+  /// besides.
+  ///
+  /// **And every other tap keeps the letter it landed on.** Each half has to be a word whose
+  /// tap form is exactly what those taps literally say. A split is already one supposition
+  /// about the typing — that a tap meant a space — and a reading that also re-letters its
+  /// way to two words is supposing twice. That is the same judgement A.29 makes about
+  /// edits, and it is not free: `jonah` at dead centre reaches `ho ah` by moving one tap
+  /// from `j` to `h`, which is a real cost of 1.0 and still lands inside a five-tap word's
+  /// slack of 2.5. Requiring the halves to be literal is what stops it, and it stops the
+  /// whole class rather than that word.
+  ///
+  /// **Both of those are choices this keyboard is making, not laws of the algorithm.** They
+  /// hold only while splits are built this way, and two tests hold them:
+  /// `aTapAwayFromTheSpaceBarCannotSplit` and `aSplitReadsEveryOtherTapLiterally`. The
+  /// moment a split can be reached through the omission transition the first guarantee is
+  /// gone and nothing else in the code would notice. SPEC.md A.34.
+  ///
+  /// **Known limit:** a one-letter half is where the remaining false splits are — `into`
+  /// reads as `i to` and `about` as `a out`, both edit-free and both cheap. Neither can be
+  /// committed, because the commit rule never replaces a word the user actually typed, and
+  /// both are real words. They can still reach the bar's right-hand slot. No minimum half
+  /// length is imposed, because `a` and `I` are words people start sentences with and there
+  /// is nothing measured to set the threshold from.
+  public func splits(for neighborhoods: [TapNeighborhood], limit: Int = 8) -> [Candidate] {
+    // Both halves have to be a word, so the shortest run that can split is three taps.
+    guard neighborhoods.count >= 3 else { return [] }
+
+    var found: [Candidate] = []
+    for index in 1..<(neighborhoods.count - 1) {
+      guard let spaceCost = neighborhoods[index].cost(of: " ") else { continue }
+      let left = Array(neighborhoods[..<index])
+      let right = Array(neighborhoods[(index + 1)...])
+      let leftWords = lexicon.entries(forTapForm: literal(for: left))
+      guard !leftWords.isEmpty else { continue }
+      let rightWords = lexicon.entries(forTapForm: literal(for: right))
+      guard !rightWords.isEmpty else { continue }
+
+      // The space is charged like any other tap — the distance from where the finger
+      // landed to the key it is being read as — and the letters are charged what they
+      // literally cost. Nothing here is a flat penalty, which is what keeps a split
+      // commensurate with the single words it competes against.
+      let cost = literalCost(for: left) + spaceCost + literalCost(for: right)
+      for first in leftWords {
+        for second in rightWords {
+          found.append(Candidate(reading: .split(first, second), cost: cost, edits: 0))
+        }
+      }
+    }
+    return Self.ranked(found, limit: limit)
+  }
+
+  /// Every reading of these taps, single words and splits together, best first.
+  ///
+  /// This is what the bar and the commit rule ask for. `candidates(for:)` stays the
+  /// single-word search underneath it, because a split is built out of two of those.
+  public func readings(for neighborhoods: [TapNeighborhood], limit: Int = 8) -> [Candidate] {
+    Self.ranked(
+      candidates(for: neighborhoods, limit: limit) + splits(for: neighborhoods, limit: limit),
+      limit: limit)
   }
 
   private func relax(

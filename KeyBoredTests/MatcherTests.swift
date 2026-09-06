@@ -109,7 +109,7 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
     #expect(!matcher.lexicon.entries(forTapForm: word).isEmpty, "\(word) is not in the lexicon")
     let taps = neighborhoods(perfectTaps(word, matcher.geometry), matcher)
     let candidates = matcher.candidates(for: taps)
-    #expect(candidates.first?.entry.tapForm == word)
+    #expect(candidates.first?.reading.singleWord?.tapForm == word)
     #expect(abs(candidates.first!.cost) < 1e-9)
   }
 }
@@ -353,7 +353,12 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
 /// three parts in 10^16 below the boundary in IEEE, so they still correct; the comment on
 /// the comparison in `Predictor.commit(for:)` says why no tolerance is applied.
 /// SPEC.md Appendix A.22.
-@Test(arguments: ["jonah", "isnthere", "qwer", "ios", "hte", "teh"])
+/// `isnthere` was in this list and is not any more. It is not a tie that stopped standing:
+/// splits gave the taps a reading that was never available before — `is there`, every tap
+/// but one read as the letter it landed on and the `n` read as the space bar above which it
+/// sits — at 1.2 against a slack of 4.0. That is the correction item 3 was asked for, and
+/// `theTapsCanSayTwoWords` is where it is asserted. SPEC.md A.34.
+@Test(arguments: ["jonah", "qwer", "ios", "hte", "teh"])
 func anExactTieKeepsWhatWasTyped(typed: String) {
   let matcher = makeMatcher()
   var word = WordInProgress()
@@ -427,8 +432,10 @@ func aOneKeySlipStillCorrectsAndNotOnATie(typed: String, intended: String) {
   }
 
   // Deliberate non-words. Every one of these must go in as typed.
+  // `isnthere` is deliberately absent: it is a run of two words with the space struck as
+  // an `n`, and since splits exist it commits as `is there`. SPEC.md A.34.
   let mustStand = [
-    "jonah", "isnthere", "qwer", "ios", "hte", "teh", "iphone", "borekey", "xkqjv",
+    "jonah", "qwer", "ios", "hte", "teh", "iphone", "borekey", "xkqjv",
     "kocienda", "asdf", "zxcv", "hjkl", "xyz", "aapl", "wifi", "tg", "hj", "gm", "vx",
     "qk", "zj", "mn", "ok", "brb", "idk", "tbh",
   ]
@@ -516,4 +523,91 @@ func aOneKeySlipStillCorrectsAndNotOnATie(typed: String, intended: String) {
       "the offsets moved \(typed) onto different keys")
     #expect(predictor.commit(for: word) == .correction(intended), "\(typed) off centre")
   }
+}
+
+/// **The taps can say two words.** `isnthere` is `is there` with the space struck as an
+/// `n`, and reading it that way is what item 3 asked for. SPEC.md A.34.
+@Test func theTapsCanSayTwoWords() {
+  let matcher = makeMatcher()
+  var word = WordInProgress()
+  for neighborhood in neighborhoods(perfectTaps("isnthere", matcher.geometry), matcher) {
+    word.append(neighborhood)
+  }
+  #expect(Predictor(matcher: matcher).commit(for: word) == .correction("is there"))
+
+  // And it is a reading of the taps rather than an edit bolted onto one: every tap is
+  // accounted for, none is invented, and the boundary rule that refuses to buy an edit
+  // therefore lets it through untouched.
+  let best = matcher.readings(for: word.neighborhoods).first
+  #expect(best?.text == "is there")
+  #expect(best?.edits == 0)
+}
+
+/// **A tap that is not next to the space bar cannot become one**, which is the property
+/// that makes `together` → `to get her` impossible rather than merely unlikely.
+///
+/// The search has a transition shaped exactly like a free space inserted anywhere — an
+/// omission follows a trie edge without consuming a tap and without ever reading a
+/// neighbourhood — so this is a design choice held in place by a test rather than a
+/// consequence of the algorithm. If someone builds the split on that transition instead,
+/// this is what fails. SPEC.md A.34.
+@Test func aTapAwayFromTheSpaceBarCannotSplit() {
+  let matcher = makeMatcher()
+
+  // Row 1 is `asdfghjkl`, two rows above the space bar, so its 3x3 block cannot reach it.
+  for letter in "asdfghjkl" {
+    let key = matcher.geometry.key(for: letter)!
+    let neighborhood = matcher.neighborhood(for: key.center)!
+    #expect(neighborhood.cost(of: " ") == nil, "\(letter) can be read as a space")
+  }
+  // Row 2 is `zxcvbnm`, directly above it, and every one of them can be.
+  for letter in "zxcvbnm" {
+    let key = matcher.geometry.key(for: letter)!
+    let neighborhood = matcher.neighborhood(for: key.center)!
+    #expect(neighborhood.cost(of: " ") != nil, "\(letter) cannot be read as a space")
+  }
+
+  // So the word that would have to split at a row-1 tap does not split at all, however
+  // cheap the two halves are on their own.
+  var word = WordInProgress()
+  for neighborhood in neighborhoods(perfectTaps("together", matcher.geometry), matcher) {
+    word.append(neighborhood)
+  }
+  #expect(matcher.splits(for: word.neighborhoods).isEmpty)
+  #expect(!matcher.readings(for: word.neighborhoods).contains { $0.text.contains(" ") })
+}
+
+/// **A split re-reads exactly one tap: the one that becomes the space.** Every other tap
+/// keeps the letter it landed on.
+///
+/// A split is already one supposition about the typing. A reading that also letters its way
+/// to two words is supposing twice, and it is not a hypothetical: `jonah` at dead centre
+/// reaches `ho ah` by moving one tap from `j` to `h`, a real cost of 1.0 that still lands
+/// inside a five-tap slack of 2.5. It was committing before the halves had to be literal.
+/// SPEC.md A.34.
+@Test func aSplitReadsEveryOtherTapLiterally() {
+  let matcher = makeMatcher()
+  var word = WordInProgress()
+  for neighborhood in neighborhoods(perfectTaps("jonah", matcher.geometry), matcher) {
+    word.append(neighborhood)
+  }
+  // The premise: `n` is row 2, so this word does have a tap that could carry a space, and
+  // the test would pass vacuously if it did not.
+  #expect(word.neighborhoods[2].cost(of: " ") != nil)
+  #expect(!matcher.readings(for: word.neighborhoods).contains { $0.text.contains(" ") })
+  #expect(Predictor(matcher: matcher).commit(for: word) == .literal("jonah"))
+}
+
+/// Splits are computed on every keystroke, so they are inside invariant I11 with everything
+/// else. A split point costs two lexicon lookups rather than two searches, which is why this
+/// stays in the same range as `matchingAWordStaysFastOnTheRealLexicon` even though a long
+/// word offers several of them.
+@Test func readingAWordWithItsSplitsStaysFast() {
+  let matcher = makeMatcher()
+  let taps = neighborhoods(perfectTaps("constellation", matcher.geometry), matcher)
+
+  let start = ContinuousClock.now
+  for _ in 0..<50 { _ = matcher.readings(for: taps) }
+  let perMatch = (ContinuousClock.now - start) / 50
+  #expect(perMatch < .milliseconds(50), "a reading took \(perMatch)")
 }
