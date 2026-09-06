@@ -523,4 +523,27 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   autocorrect in Contacts' search field and this keyboard does, because `DocumentTraits`
   never reads `autocorrectionType`.
 
-The tree is at 0.0.11 build 1, which is spent. Bump before archiving again.
+- **0.0.12 build 1.** Uploaded at 13:38:01 EDT on 2026-09-06 from commit `e16c428` with a
+  clean tree, 99 tests passing. Run started 13:36:33. One change, shipped alone on purpose
+  because it alters what the keyboard does to every word typed.
+
+  **The boundary never buys an edit.** The slack was `literalCost + 0.5 * tapCount` and an
+  edit costs a flat 1.5, so from three taps up an edit was always affordable and got more
+  affordable the longer the word. Measured over the whole probe set, the edit count
+  separates the classes exactly: all sixteen one-key-slip fixtures reach their word with
+  zero edits, and every edit-carrying candidate among the deliberate non-words is junk. So
+  a correction may re-read a tap and may not invent one or throw one away. `iphone` stands
+  now, and `borekey` is safe by construction rather than by half a unit out of four.
+  SPEC.md A.29.
+
+  **Not fixed, and named so it is not mistaken for done:** `keybored`, `sry`, `np` and `pw`
+  are edit-free substitutions costing exactly what a genuine slip of the same length costs.
+  Nothing in this scorer can separate them from the corrections that must keep firing.
+
+  **The rule shipped wrong once between builds and the device caught it.** Written first as
+  a veto on the best candidate rather than a filter over the candidates, it passed every
+  test and then stopped `hrllo` correcting at 402pt; the fixtures all tap dead centre and
+  cannot express it. Verified after the fix in Contacts' search field at 402pt: `hrllo` goes
+  in as `hello`, `Hrllo` as `Hello`, and `iphone` stands.
+
+The tree is at 0.0.12 build 1, which is spent. Bump before archiving again.
