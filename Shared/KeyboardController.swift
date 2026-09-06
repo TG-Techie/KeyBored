@@ -317,7 +317,11 @@ public final class KeyboardController {
     case .letter(let letter):
       if plane == .letters {
         guard let neighborhood = predictor.matcher.neighborhood(for: point) else { return }
-        word.append(neighborhood, casing: shift.wordCasing)
+        // Whether this tap starts a word, or continues one that was already in the field,
+        // is decided once — here, before the character goes in, while the character in
+        // front of the cursor is still the one that was there.
+        let anchored = word.isEmpty ? !Self.continuesAWord(document?.textBeforeInput?.last) : true
+        word.append(neighborhood, casing: shift.wordCasing, anchored: anchored)
         insert(String(cased(neighborhood.literal)))
         // Shift is a one-shot: it applies to the letter that follows it and then
         // releases, which is what the stock keyboard does — except in a field that asked
@@ -405,7 +409,7 @@ public final class KeyboardController {
   /// exactly `tapCount` characters is safe because every letter-plane tap inserted
   /// exactly one.
   public func commitBubble(_ text: String) {
-    guard !word.isEmpty else { return }
+    guard !word.isEmpty, word.isAnchored else { return }
     let text = word.cased(text)
     for _ in 0..<word.tapCount { document?.deleteBackward() }
     insert(text)
@@ -437,9 +441,25 @@ public final class KeyboardController {
     refresh()
   }
 
+  /// Whether a character in front of the cursor means the next tap lands inside a word.
+  ///
+  /// The apostrophe is in here because the lexicon has words with one in the middle, so
+  /// `don'` followed by `t` is a continuation and not a new word.
+  private static func continuesAWord(_ character: Character?) -> Bool {
+    guard let character else { return false }
+    return character.isLetter || character == "'" || character == SmartPunctuation.apostrophe
+  }
+
   /// Applies the correction, if the commit policy says there is one.
   private func commitWord() {
     guard !word.isEmpty else { return }
+    // A word this keyboard did not compose the start of is not one it may rewrite: the
+    // taps are a fragment of it, and `tapCount` characters back from the cursor is not
+    // where that word begins. SPEC.md Appendix A.16.
+    guard word.isAnchored else {
+      endWord()
+      return
+    }
     if case .correction(let text) = predictor.commit(for: word) {
       for _ in 0..<word.tapCount { document?.deleteBackward() }
       document?.insertText(word.cased(text))
@@ -469,7 +489,12 @@ public final class KeyboardController {
     // unchanged by this — but the bar is the largest type on the keyboard, and printing
     // what someone is typing into a password field there is the one place this keyboard
     // would be worse than the stock one to be seen using. SPEC.md section 11.2.
-    bar = traits.isSecure ? .empty : predictor.bar(for: word).map(word.cased)
+    // An unanchored word gets no bar at all. The left bubble's job is to say "this is
+    // what you typed", and for a fragment of a word already in the field it would be
+    // saying it about three letters in the middle of one. Nothing honest fits there.
+    bar =
+      traits.isSecure || !word.isAnchored
+      ? .empty : predictor.bar(for: word).map(word.cased)
     onChange?()
   }
 

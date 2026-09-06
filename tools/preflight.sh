@@ -114,6 +114,29 @@ else
   fail "Assets.car is missing — nothing was compiled into the asset catalog"
 fi
 
+# --- the word list, in the extension and not only in the app --------------------------
+#
+# The keyboard traps at load if the bundled list is missing, so the whole keyboard is dead
+# and the only symptom is that it never appears. Observed 2026-09-06 on a simulator: the
+# resource was renamed on disk without regenerating the project, the extension crashed in
+# `EnglishLexicon.words()` 0.66 seconds after launch, and nothing in the build said a word
+# about it. **The app having the file proves nothing about the extension**, which is a
+# separate bundle with its own copy phase, so both are checked.
+list_name=$(sed -n 's/.*wordListResource = "\(.*\)"/\1/p' \
+  "$(dirname "$0")/../Shared/EnglishLexicon.swift")
+if [ -z "$list_name" ]; then
+  fail "could not read wordListResource out of Shared/EnglishLexicon.swift"
+else
+  for bundle in "$APP" "$APP/PlugIns"/*.appex; do
+    [ -d "$bundle" ] || continue
+    if [ -f "$bundle/$list_name.txt" ]; then
+      pass "$list_name.txt is in $(basename "$bundle")"
+    else
+      fail "$list_name.txt is missing from $(basename "$bundle") — the keyboard traps at load"
+    fi
+  done
+fi
+
 # --- orientations, checked at upload and nowhere else ---------------------------------
 if plutil -p "$APP/Info.plist" | grep -A1 '"UISupportedInterfaceOrientations" =>' | grep -q 'UIInterfaceOrientation'; then
   pass "UISupportedInterfaceOrientations is non-empty"

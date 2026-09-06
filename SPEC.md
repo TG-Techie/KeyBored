@@ -442,12 +442,15 @@ literal, and stands. That second case is the one a daily driver cannot get wrong
 One trie, built at startup from five sources. There is no special-case path for any of
 them; they differ only in `source`.
 
-1. **Built-in dictionary.** The `3esl` list from 12dicts 6.0.2 — 19,217 words after
-   filtering to plain lowercase entries — bundled at
-   `Shared/Resources/12dicts-3esl-lowercase.txt`. **Public domain**, in its author's own
-   words read from the distribution rather than from a summary of it. The README beside the
-   file carries the quotation, the acknowledgment its author asks for, and what was
-   filtered out. Sized at 19k rather than 41k or 82k for the reason in section 5.4.
+1. **Built-in dictionary.** The `2of12inf` list from 12dicts 6.0.2, unioned with the
+   `3esl` list it replaced — 75,646 words after filtering to plain lowercase entries —
+   bundled at `Shared/Resources/12dicts-2of12inf-lowercase.txt`. `2of12inf` is the core
+   vocabulary **with its inflections**, which is the whole point: `3esl` had `edit` and not
+   `editing`, `cat` and not `cats`. **Not public domain** — it derives from AGID, whose
+   terms are permissive and require the acknowledgment the README beside the file carries,
+   along with AGID's own sources' notices and what was filtered out. It was 19,217 words
+   until 2026-09-06, for the reason in section 5.4; Appendix A.16 is why that changed and
+   what had to change with it.
 
 2. **Contractions.** `tapForm` without the apostrophe, `insertion` with it. A user who
    *does* type the apostrophe still gets the right result, because the apostrophe ends the
@@ -540,7 +543,7 @@ container app is not a mock-up: it runs the same controller and the same view.
     Shared/ConstellationMatcher.swift   tuning, neighbourhoods, the beam search
     Shared/TypingSession.swift          word in progress, candidate bar, the commit rule
     Shared/EnglishLexicon.swift         loads the bundled list and the hand-held entries
-    Shared/Resources/                   12dicts 3esl, 19,217 words, plus its provenance
+    Shared/Resources/                   12dicts 2of12inf, 75,646 words, plus provenance
     Shared/KeyboardController.swift     routing
     Shared/KeyboardView.swift           the keys, the preview bubble, the bar
     KeyBoredKeyboard/KeyboardViewController.swift  UIKit plumbing, and nothing else
@@ -675,11 +678,13 @@ only in the same breath as Full Access, since without it the group buys nothing.
 Each of these was decided rather than deferred. Any can be overturned; the reasoning is
 here so that overturning one is an argument rather than a guess.
 
-2. **The word list is 12dicts `3esl`, public domain, 19,217 words.** Its author released
-   12dicts to the public domain, so nothing ships with the binary. The frequency-ordered
-   `2+2+3frq` list is **not** usable until AGID's terms are established: its `agid.txt`
-   carries a bare copyright line and no grant of permission at all, and a licence is not
-   something to infer.
+2. **The word list is 12dicts `2of12inf`, 75,646 words, and it is not public domain.**
+   It derives from AGID, and `agid.txt` does carry a grant of permission — two thirds of
+   the way down, under a heading of its own. This entry said the opposite until
+   2026-09-06, on a reading that stopped at the copyright line near the top, and it said
+   the frequency-ordered `2+2+3frq` list was unusable for that reason. It is not unusable;
+   it is available on the same terms as the list now bundled. The acknowledgments AGID and
+   its sources require travel in `Shared/Resources/README.md`.
 3. **`project.yml` and xcodegen stay.** Two targets and a test bundle share a source root,
    which is where a generated project earns its keep. Cheaper to drop later than to add
    later.
@@ -1523,6 +1528,57 @@ reading `"hel" | gel`, a held `y` — whose preview sits squarely over the middl
 leaves `hell` legible either side of the cap instead of blanking it (`fky.png`). The same
 capture settles a second question raised from a phone screenshot: the preview draws the
 lowercase glyph when the keyboard is unshifted.
+
+### A.16 — two ways the keyboard replaced text the user had typed
+
+Both reported on 2026-09-06, both reproduced, and both the same shape: the keyboard
+rewriting characters that were already right.
+
+**One — taps that land inside a word already in the field.** `WordInProgress` is the taps
+since the last boundary, and everything downstream assumes the taps and the word are the
+same thing: the bar calls the taps "what you typed", and a commit deletes exactly
+`tapCount` characters back from the cursor and puts a correction there. Put the cursor
+inside a word the keyboard did not compose and neither holds.
+
+Reproduced in Safari's address field on a simulator, BoreKey confirmed current from the
+globe list: type `cat`, space, delete, then `hte`. The field reads `cathte` — which is what
+the user typed — and the bar reads `"hte" | he | hate`, which is about a fragment. The next
+space took the field to `cathe`: three characters deleted and `he` put in their place
+(`wb2.png`, `wb3.png`).
+
+The word now records whether it began where a word begins, decided once, on the first tap,
+from the character in front of the cursor at that moment. A word that did not is not one
+this keyboard may describe or rewrite: no bar, no correction, no bubble commit. Deleting
+back into a word and carrying on typing is the common way to reach this, and it is why the
+keyboard cannot simply read the word out of the document instead — the letters are there but
+the taps that produced them are not, and the taps are what the matcher scores.
+
+**Two — a correctly typed word replaced by a different one.** His words: "It also make a
+bunch of poor corrections like editinf to doting and/or often drooping an s to turn it into
+a wholehxdifferent word".
+
+The commit rule in section 6.3 asked one question — is the best candidate within
+`literalCost + 0.5 per tap` — and a candidate that close can be a different real word.
+Nothing in the cost separates a typo from a correctly typed word, because accurate fingers
+put both in the same place. Dropping a trailing `s` is the sharpest case: both spellings are
+real words and the taps barely distinguish them.
+
+**A word the user actually typed is now never replaced.** The rule tests the insertion and
+not the tap form, so the corrections that exist to turn a word into a different string keep
+firing: `dont` is in the lexicon with `don't` as its insertion, so it is not "already a
+word" by this test, while `editing` inserts itself and is.
+
+What to suggest and when to overwrite are two decisions, and this changes only the second.
+The candidate is still ranked, still shown in the bar, and still applied if it is tapped.
+That separation is the one idea taken from a look at FUTO's Android keyboard, which exposes
+it to its users as an autocorrect-confidence threshold distinct from its ranking weights;
+nothing was copied, and their code is source-available rather than open source.
+
+**What this does not do.** It does not make the ranking better, and a genuinely mistyped
+non-word still gets whatever the constellation search offers. It also does not help a word
+that is missing from the lexicon, which was reported in the same message and is not
+diagnosed: a word absent from the list and a word present but never ranked into the top
+three are different defects, and which of the two he hit was not established.
 
 ## Appendix B — sources
 

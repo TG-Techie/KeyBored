@@ -218,6 +218,34 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
   #expect(predictor.commit(for: word) == .literal("xkqjv"))
 }
 
+/// A word the user actually typed is never replaced, however close a candidate sits.
+///
+/// Reported 2026-09-06: `editing` going in as `doting`, and a trailing `s` dropped to leave
+/// another word entirely. The commit rule asked only whether a candidate was within the
+/// slack, and a candidate that close can be a different real word — nothing in the cost
+/// separates a typo from a correctly typed word, because accurate fingers put both in the
+/// same place.
+///
+/// The rule tests the insertion and not the tap form, and these two cases are why: an entry
+/// that exists to rewrite a word into a different string still fires, and one that inserts
+/// the typed string as itself stands the correction down. SPEC.md Appendix A.16.
+@Test func aLiteralThatIsAlreadyAWordIsNeverReplaced() {
+  let geometry = KeyboardGeometry(width: referenceWidth)
+
+  func commit(_ typed: String, against entries: [LexiconEntry]) -> Commit {
+    let matcher = ConstellationMatcher(geometry: geometry, lexicon: Lexicon(entries: entries))
+    var word = WordInProgress()
+    for neighborhood in neighborhoods(perfectTaps(typed, geometry), matcher) {
+      word.append(neighborhood)
+    }
+    return Predictor(matcher: matcher).commit(for: word)
+  }
+
+  let rewrite = LexiconEntry(tapForm: "dont", insertion: "don't")
+  #expect(commit("dont", against: [rewrite]) == .correction("don't"))
+  #expect(commit("dont", against: [rewrite, LexiconEntry(tapForm: "dont")]) == .literal("dont"))
+}
+
 // MARK: - The lexicon
 
 @Test func twoEntriesCanShareOneTapForm() {
@@ -230,10 +258,65 @@ private func neighborhoods(_ points: [CGPoint], _ matcher: ConstellationMatcher)
 
 @Test func theBundledListIsTheOneTheSpecSays() {
   // If this number moves, Shared/Resources/README.md is describing a different file.
-  #expect(EnglishLexicon.words().count == 19_217)
+  #expect(EnglishLexicon.words().count == 75_646)
+
+  // The words that were missing from the list this replaced, and the reason it was
+  // replaced: he typed them and the keyboard corrected them into other words.
+  for word in ["editing", "edited", "edits", "cats", "walked", "running"] {
+    #expect(EnglishLexicon.words().contains(word), "\(word) is missing from the list")
+  }
   let lexicon = EnglishLexicon.make()
   #expect(lexicon.entries(forTapForm: "lol").first?.source == .idiom)
   #expect(lexicon.entries(forTapForm: "omw").isEmpty)
+}
+
+/// The lexicon is built once, when the keyboard extension is loaded, and until it is
+/// built the keyboard cannot draw a bar. So its construction is on the path a person
+/// watches, which the match latency below is not.
+///
+/// Worth a measurement because the list grew fourfold on 2026-09-06, from 19,217 words to
+/// 75,646. Same loose bound and same reasoning as the test below: an order of magnitude,
+/// not a few milliseconds.
+///
+/// **The bound is in seconds because this runs unoptimised.** The number that matters was
+/// measured on the shipping configuration instead, with a probe build of the extension
+/// reading its own clock: **34 ms in a release build**, against 2 to 5 seconds for the same
+/// work in a debug simulator build on a loaded machine. So this test guards the order of
+/// magnitude of the debug number and says nothing about the release one. SPEC.md A.16.
+@Test func buildingTheLexiconStaysQuickEnoughToDoAtLaunch() {
+  let start = ContinuousClock.now
+  let lexicon = EnglishLexicon.make()
+  let elapsed = ContinuousClock.now - start
+  #expect(lexicon.count > 75_000)
+  #expect(elapsed < .seconds(8), "building the lexicon took \(elapsed)")
+}
+
+/// What the trie costs in memory, which is the budget a keyboard extension is killed for
+/// exceeding rather than warned about.
+///
+/// Measured as the process's own physical footprint either side of building it, which is
+/// the number iOS's jetsam looks at. The bound is loose for the same reason the timing
+/// bounds are: it is here to catch the list growing by another order of magnitude, not to
+/// police a megabyte.
+@Test func theTrieFitsInAnExtensionsMemoryBudget() {
+  func footprint() -> Double {
+    var info = task_vm_info_data_t()
+    var count = mach_msg_type_number_t(
+      MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+    let result = withUnsafeMutablePointer(to: &info) {
+      $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+        task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+      }
+    }
+    return result == KERN_SUCCESS ? Double(info.phys_footprint) / 1_048_576 : .nan
+  }
+
+  let before = footprint()
+  let lexicon = EnglishLexicon.make()
+  let cost = footprint() - before
+  #expect(lexicon.count > 75_000)
+  #expect(cost < 40, "the lexicon cost \(cost) MB")
+  print("lexicon footprint: \(cost) MB for \(lexicon.count) entries")
 }
 
 @Test func matchingAWordStaysFastOnTheRealLexicon() {

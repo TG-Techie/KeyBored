@@ -59,9 +59,19 @@ public struct Lexicon: Sendable {
   var nodes: [Node]
   public private(set) var entries: [LexiconEntry]
 
+  /// Reserving is not a micro-optimisation here, it is most of the cost.
+  ///
+  /// The trie is built once, at the moment the keyboard extension loads, and until it is
+  /// built the keyboard cannot offer a candidate — so this is on the path somebody
+  /// watches. Growing two arrays from empty through 75,000 words means reallocating and
+  /// copying both of them a few dozen times. The node estimate is the observed ratio of
+  /// nodes to entries on the bundled list rounded up; being wrong about it costs one
+  /// reallocation, and being right saves all of them.
   public init(entries: [LexiconEntry]) {
     self.nodes = [Node()]
+    self.nodes.reserveCapacity(entries.count * 3 + 1)
     self.entries = []
+    self.entries.reserveCapacity(entries.count)
     for entry in entries { insert(entry) }
   }
 

@@ -239,6 +239,42 @@ private func strike(_ character: Character, _ controller: KeyboardController) {
   #expect(KeyboardGeometry(width: 402, plane: .numbers).key(for: SmartPunctuation.quote) != nil)
 }
 
+// MARK: - Editing text the keyboard did not compose
+
+/// Reproduced on a simulator 2026-09-06, in Safari's address field: `cat`, space, delete,
+/// `hte` left `cathte` with the bar reading `"hte" | he | hate`, and the next space turned
+/// the field into `cathe`. SPEC.md Appendix A.16.
+@MainActor
+@Test func tapsThatLandInsideAWordAlreadyInTheFieldAreNotAWord() {
+  let (controller, document) = typing()
+  document.text = "cat"
+  controller.documentDidChange()
+
+  type("hte", into: controller)
+  #expect(document.text == "cathte")
+
+  // Nothing honest fits in a bar describing three letters in the middle of a word.
+  #expect(controller.bar == .empty)
+
+  // And the boundary leaves what was typed alone, where it used to rewrite three
+  // characters back from the cursor as if they were the whole word.
+  press(.space, controller)
+  #expect(document.text == "cathte ")
+}
+
+/// The same rule the other way round: taps that do start a word still behave.
+@MainActor
+@Test func aWordStartedAfterASpaceIsStillCorrected() {
+  let (controller, document) = typing()
+  document.text = "cat "
+  controller.documentDidChange()
+
+  type("dont", into: controller)
+  #expect(controller.bar.literal == "dont")
+  press(.space, controller)
+  #expect(document.text == "cat don't ")
+}
+
 /// The period key an address field gets is a punctuation key, not a letter key, and the
 /// difference is the whole reason it has its own role: it ends the word in progress and
 /// the matcher never sees where it was struck. SPEC.md Appendix A.14.

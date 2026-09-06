@@ -64,24 +64,47 @@ public struct WordInProgress: Sendable {
   /// somewhere: taken from the first tap and applied to whatever is committed.
   public private(set) var casing: WordCasing = .lower
 
+  /// Whether these taps began where a word begins, rather than inside one that was
+  /// already in the field.
+  ///
+  /// Everything this type is for assumes the taps and the word are the same thing: the
+  /// bar describes the taps as "what you typed", and a commit rewrites exactly
+  /// `tapCount` characters. Put the caret in the middle of an existing word and both
+  /// stop being true — the taps are a fragment, and rewriting them replaces text the
+  /// user typed with a correction to a word they never wrote.
+  ///
+  /// Measured on a simulator 2026-09-06: `cat`, space, delete, `hte` left `cathte` in
+  /// Safari's address field with the bar reading `"hte" | he | hate`, and the next space
+  /// turned the field into `cathe`. SPEC.md Appendix A.16.
+  ///
+  /// An empty word is anchored, because a word that has not started cannot have started
+  /// in the wrong place.
+  public private(set) var isAnchored = true
+
   public init() {}
 
   public var isEmpty: Bool { neighborhoods.isEmpty }
   public var tapCount: Int { neighborhoods.count }
 
-  public mutating func append(_ neighborhood: TapNeighborhood, casing: WordCasing = .lower) {
-    if neighborhoods.isEmpty { self.casing = casing }
+  public mutating func append(
+    _ neighborhood: TapNeighborhood, casing: WordCasing = .lower, anchored: Bool = true,
+  ) {
+    if neighborhoods.isEmpty {
+      self.casing = casing
+      isAnchored = anchored
+    }
     neighborhoods.append(neighborhood)
   }
 
   public mutating func removeLast() {
     if !neighborhoods.isEmpty { neighborhoods.removeLast() }
-    if neighborhoods.isEmpty { casing = .lower }
+    if neighborhoods.isEmpty { reset() }
   }
 
   public mutating func reset() {
     neighborhoods.removeAll()
     casing = .lower
+    isAnchored = true
   }
 
   /// Applies the word's own casing to text the matcher produced.
@@ -166,6 +189,24 @@ public struct Predictor: Sendable {
       return .literal(literal)
     }
     if best.text == literal { return .literal(literal) }
+
+    // **A word the user actually typed is never replaced.** The rule below asks only
+    // whether a candidate sits close enough to the taps, and a close-enough candidate can
+    // be a different real word: reported 2026-09-06, `editing` going in as `doting`, and
+    // a trailing `s` dropped to leave another word entirely. Nothing in the cost tells
+    // those apart from a genuine typo, because a typo and a correctly typed word land in
+    // the same place when the fingers are accurate.
+    //
+    // The test is the insertion and not the tap form, so the corrections that exist to
+    // rewrite a word into a different string still fire: `dont` is in the lexicon with
+    // `don't` as its insertion, so it is not "already a word" by this rule, while
+    // `editing` inserts itself and is. SPEC.md Appendix A.16.
+    //
+    // What to suggest and when to overwrite are two decisions. This changes only the
+    // second: the candidate is still offered in the bar, and a tap on it still applies.
+    if matcher.lexicon.entries(forTapForm: literal).contains(where: { $0.insertion == literal }) {
+      return .literal(literal)
+    }
 
     let slack = matcher.literalCost(for: word.neighborhoods)
       + Tuning.correctionSlackPerTap * Double(word.tapCount)

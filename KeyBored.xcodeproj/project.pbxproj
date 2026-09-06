@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */; };
-		09DC17C4EE08C8F8DC4CDC0B /* 12dicts-3esl-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */; };
 		0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */; };
+		1754CC856C55487979CC6739 /* 12dicts-2of12inf-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */; };
 		17C497CFD4CD282A3328723F /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		17EB8CCFCC165AA5A2DE8914 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
-		1D359295D330C3156CE3F26D /* 12dicts-3esl-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */; };
+		1AFAF1A3D8F76BDDF61FE425 /* 12dicts-2of12inf-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */; };
 		1D52AB0B7EB2884F1E2553B5 /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
 		1E05BBEEF694831A0317DCC1 /* KeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2400830B70778C048C3CBE28 /* KeyboardController.swift */; };
 		27368CB8E85B56E434A338D9 /* KeyBoredVersionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */; };
@@ -43,12 +43,12 @@
 		AD18632A574D86BB8E01C6E4 /* KeyboardGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7D44C12690E9BB1E3E55AD /* KeyboardGeometry.swift */; };
 		AD8649BA4246460957EE60D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29162360F13E2B650EB8AD47 /* ContentView.swift */; };
 		BFB7D9749CC759E0028C4FDA /* KeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2400830B70778C048C3CBE28 /* KeyboardController.swift */; };
+		C017F879F4446DD46E986AE7 /* 12dicts-2of12inf-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */; };
 		C10FF9337D6821C1B09EC69D /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
 		C39143B6EFBBC9024B8ED488 /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
 		C9E7E76ABE8A98504113C6FE /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
 		DBFF1BE423AFF63D6DB50C95 /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
 		E42B041F2DD9210A4CDEE855 /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
-		E728CBD0C2530AEC3205B96C /* 12dicts-3esl-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */; };
 		E97B9025814D2D8173FE6A9F /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
 		F277EAFA3F7386F79B40B697 /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		F9D288D54267A98822DAA9D2 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13593DD3399D48D8AC7170D5 /* KeyboardViewController.swift */; };
@@ -97,11 +97,11 @@
 		53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersion.swift; sourceTree = "<group>"; };
 		63D19F82651FDDD5CE4BFE99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewTests.swift; sourceTree = "<group>"; };
+		7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "12dicts-2of12inf-lowercase.txt"; sourceTree = "<group>"; };
 		7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPunctuation.swift; sourceTree = "<group>"; };
 		81222902FB2FAA2B91476168 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockLikenessTests.swift; sourceTree = "<group>"; };
 		95610C2A24233305E18A020D /* ConstellationMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationMatcher.swift; sourceTree = "<group>"; };
-		9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "12dicts-3esl-lowercase.txt"; sourceTree = "<group>"; };
 		9DBFEC4FFCC1BD393BB0F0B1 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostIntegrationTests.swift; sourceTree = "<group>"; };
 		A1684CD1434266B7E0D519C3 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
@@ -134,7 +134,7 @@
 		2253F6AB2DDCE6105A912454 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */,
+				7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -311,7 +311,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E728CBD0C2530AEC3205B96C /* 12dicts-3esl-lowercase.txt in Resources */,
+				C017F879F4446DD46E986AE7 /* 12dicts-2of12inf-lowercase.txt in Resources */,
 				A458EDBF9019AC8C0695D448 /* AppIcon.icon in Resources */,
 				956F446154E51532EDBAB730 /* Assets.xcassets in Resources */,
 			);
@@ -321,7 +321,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09DC17C4EE08C8F8DC4CDC0B /* 12dicts-3esl-lowercase.txt in Resources */,
+				1AFAF1A3D8F76BDDF61FE425 /* 12dicts-2of12inf-lowercase.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -329,7 +329,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D359295D330C3156CE3F26D /* 12dicts-3esl-lowercase.txt in Resources */,
+				1754CC856C55487979CC6739 /* 12dicts-2of12inf-lowercase.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

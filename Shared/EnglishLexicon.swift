@@ -16,9 +16,10 @@ import Foundation
 /// is a data change. `Lexicon` never learns which it was — it only ever sees
 /// `LexiconEntry` values, which is the point of the seam being there.
 public enum EnglishLexicon {
-  /// The bundled list: 19,217 words, 12dicts `3esl`, public domain. See the README
-  /// beside the file for the licence text and the acknowledgment its author requests.
-  public static let wordListResource = "12dicts-3esl-lowercase"
+  /// The bundled list: 75,646 words, 12dicts `2of12inf` with inflections, unioned with
+  /// the `3esl` list it replaced. See the README beside the file for the licence text,
+  /// the acknowledgments its authors require, and why the list grew fourfold.
+  public static let wordListResource = "12dicts-2of12inf-lowercase"
 
   /// Contractions, whose tap form has no apostrophe so the user never leaves the letter
   /// plane and the constellation is computed over letters alone.
