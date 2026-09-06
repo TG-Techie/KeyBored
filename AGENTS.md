@@ -143,6 +143,43 @@ appears to have been written correctly from the beginning, never patched  /  App
 changes to the keyboard like that  /  PBM A". Recorded by hazy-zephyr, 2026-09-06; the
 wording of the paragraphs above is mine, not his, except where quoted.
 
+## Never assume your conclusions are correct
+
+A conclusion is true over the region you exercised, and nowhere else until you exercise it.
+State the boundary with the claim, or do not state the claim.
+
+This is not a new rule — fleet doctrine has carried "never presume your presumptions are
+correct" for weeks. It is here because it was broken four times in one morning on this
+project, and each time the break had the same shape: something verified in the region that
+could be reached, then reported as a property of the whole.
+
+- "The preview and the insertion read the same hit-test result, so they cannot disagree."
+  True everywhere a touch was delivered. In the gaps no touch was delivered at all, so the
+  shared path had never run there, and the sentence was a claim about the whole keyboard
+  drawn from the part of it that worked.
+- "The 51px band was a 0.0.3 defect that `3a9fde1` fixed." The reverse: `3a9fde1`
+  introduced it. The commit had been re-read, and re-reading is not a check.
+- "Stock's key preview is a teardrop with a stem." From memory of what iOS keyboards look
+  like. It is a detached rounded rectangle, and his screenshot says so.
+- A time and a commit hash, both stated without running the command that would print them,
+  and one of them reported a deadline as missed when it had not yet arrived.
+
+The practical form, and the one to actually follow: **anything a command would print gets
+the command run at the moment of writing the sentence**, and any claim wider than what was
+measured says how wide the measurement was. There is a fleet SOP entry on each of these —
+`recalled-values-reported-as-measurements.md` and
+`the-process-that-routes-input-may-be-reading-your-pixels.md`.
+
+The companion instruction, given in the same message: **do not use him as a test harness.**
+The reference keyboard is on the same device as ours and on the simulator here. Measure
+ours against it, find the whole set of defects, fix them, verify them, and bring him a
+build — not a question and not a report of what his own keyboard does.
+
+Granted by Jonah, pbm, 2026-09-06. His words, verbatim: "I am not your reverse centaur; go
+do it and do it well  /  never assume your conclusions are correct  PBM". Recorded by
+hazy-zephyr, 2026-09-06; the wording of the paragraphs above is mine, not his, except where
+quoted, and the four examples are my own errors and crisp-kelp's.
+
 ## Coding conventions
 
 - Idiomatic Swift 6, with `SWIFT_STRICT_CONCURRENCY: complete`.
