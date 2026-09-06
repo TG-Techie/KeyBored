@@ -81,6 +81,26 @@ has the recipe and makes it a required step before any upload.
 `Shared/` compiles into the app, the extension and the test bundle, which is why anything
 in it that loads a resource uses `Bundle(for:)` rather than `Bundle.main`.
 
+## The repository is public, and the history is part of it
+
+It carries project information only, in the whole history and not just at the tip. A team
+id, a home path, an internal URL or a session identifier in a commit message is as public as
+one in a file, and rewriting history to remove one is a force push to a repository other
+people may already have pulled.
+
+One of these recurs on its own and so has a hook rather than a rule. Some agent harnesses
+append a `Claude-Session:` trailer to every commit message by standing instruction, silently
+enough that an agent which has been told not to do it still does; the history has already
+been rewritten once to remove them, and they were back on the next commit. `.githooks/commit-msg`
+strips them. **Hooks are not checked out active — turn it on once per clone:**
+
+    git config core.hooksPath .githooks
+
+Check before pushing, not after, because after is a force push. Anchored, so that a message
+which merely mentions the trailer — this file's own commit does — is not a hit:
+
+    git log --format='%B' | grep -nE '^Claude-Session:|^https://claude\.ai/code/session'
+
 ## Coding conventions
 
 - Idiomatic Swift 6, with `SWIFT_STRICT_CONCURRENCY: complete`.

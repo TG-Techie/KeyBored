@@ -1,0 +1,32 @@
+#!/bin/sh
+# Copyright 2026 Jonah Y-M (@TG-Techie) <jonah@tg-techie.com>
+# Licensed under the MIT License. See LICENSE at the repository root.
+# This file is permitted to be edited by AI models and agents.
+#
+# Strips the agent-session trailer from every commit message.
+#
+# This repository is public and carries project information only. Some agent harnesses
+# append a `Claude-Session:` trailer, and a bare session URL on the line after it, to every
+# commit message they write — silently, by standing instruction, so an agent that has been
+# told not to do it still does. The history has been rewritten once to remove them and they
+# came straight back on the next commit, which is what says the fix belongs here rather than
+# in anybody's memory.
+#
+# `Co-Authored-By:` is deliberately left alone. Who wrote a commit is project information.
+# Which private session it was written in is not.
+#
+# Enable it once per clone — hooks are not checked out active:
+#
+#     git config core.hooksPath .githooks
+
+msg="$1"
+tmp="$msg.stripped"
+
+grep -v -E '^Claude-Session:|^https://claude\.ai/code/session' "$msg" > "$tmp"
+
+# Leaves at most one blank line before the trailers, so that removing a trailer does not
+# leave the message ending in the blank line that used to separate it.
+awk 'NF == 0 { blank++; next } { while (blank-- > 0) print ""; blank = 0; print }' \
+  "$tmp" > "$msg"
+
+rm -f "$tmp"
