@@ -1694,6 +1694,104 @@ and symbol planes, the pressed states, the key preview's geometry, and any host 
 Contacts. This entry covers the letter plane in dark on two widths.
 
 
+### A.19 — the input view is a wall, and the key preview is drawn against it
+
+Stock's key preview rises 207px above the top of the cap it belongs to, on a 430pt phone at
+3x. The top row of caps starts 104px below the top of a custom keyboard's input view. The
+difference is not a layout problem to be solved; it is outside the extension entirely.
+
+**The clip is not UIKit's, so no UIKit property turns it off.** A `CAShapeLayer` given a
+frame above the input view's top edge draws, and is sliced flat at that edge. Walking the
+whole ancestor chain at runtime — `KeyboardView`, `UIInputView`, three plain `UIView`s,
+`UIDropShadowView`, `UITransitionView`, `_UIHostedWindow` — every one of them reports
+`clipsToBounds` false and `masksToBounds` false. Nothing in the process is clipping it. The
+compositor is, because the input view is a remote surface and its bounds are the surface.
+
+**The same boundary decides which touches exist.** A fully transparent region of the
+surface is never offered to the extension at all: `hitTest(_:with:)` is not called, so no
+hit-testing inside the extension can recover it. That is the other face of the same fact
+and it is why `KeyboardView.touchableFill` exists — see A.18 and the gap dead zone.
+
+**The escape was tried and reverted.** Asking for a taller input view does reserve the
+room, and the rows stay where they were, because the input view's bottom is pinned and the
+rows lay out from its top. But iOS extends the *visible plate* with it: the keyboard then
+stands 34pt taller than stock with an empty band above the suggestion bar. Trading a
+preview that is short on one row for a keyboard that is the wrong height on every row is a
+worse defect, so it was measured, seen, and undone.
+
+Two consequences the code carries:
+
+- The preview is stock's shape at stock's size wherever it fits, and pushed down into the
+  view's bounds where it does not, which is row 0 only. `previewFrame(above:)` does the
+  clamp and nothing else does.
+- The same wall stands in front of any long-press accent picker. Stock's `ò o ô` popover
+  is drawn well above the input view's top edge; whatever this keyboard eventually does
+  there cannot be a taller popover, and will have to be a shape that fits.
+
+**The preview's proportions, measured against stock in one field.** A 430pt simulator
+(iPhone 15 Pro Max) at 3x, dark appearance, stock and this keyboard holding the same `a` in
+the same Contacts search field. Cap 109 wide and 135 tall, cap `a` at x 83-191, row 1 top
+2085. All numbers are device pixels.
+
+The rise was right on the first build: stock's bulb top reads 1879 and ours 1878, and the
+bulb is 181 wide in both. Four things were wrong, and each was found by measuring rather
+than by looking.
+
+**The bulb's shoulders are 36px, not the cap's 21px doubled.** Each row of the bulb's top
+32px was scanned for its run of bulb colour and the widths fitted to a rounded rectangle.
+Stock fits 34px. This keyboard, *drawing a known 42px*, fits 40px — so the estimator reads
+2px light, and stock draws 36. Fitting our own known value is what makes stock's fitted
+value usable; without it, 34 would have been written down as stock's radius.
+
+**The letter is 37.5pt, half again the 25pt on the cap.** Measured as a ratio of x-heights,
+because a point size is not visible in a screenshot: stock's unpressed `e` cap measures 40px
+tall, stock's preview `a` measures 60px, and this keyboard's own `e` measures the same 40px.
+The keyboard had been drawing 0.56 of the cap height, 25.2pt — the cap's own size, in a
+bulb built to hold a bigger one.
+
+**The letter is not centred in anything the shape has.** A `UILabel` centres its line box,
+and a line box is taller than the glyph and not symmetric about it, so no part of the
+outline predicts where the glyph lands. Centring in a 201px box measured from the top of
+the preview put ours at y 1960-2018 against stock's 1965-2024; 211px puts it on stock's.
+The constant is that box and nothing else.
+
+**There is no stem.** This is the one that had been wrong twice. An earlier reading measured
+the shape at one row, found 149px, and drew a parallel-sided stem of that width; a second
+reading fitted a rounded rectangle with a 48px bottom radius. Both are artefacts of reading
+too few rows. Stock's silhouette narrows continuously from the bulb to the cap:
+
+    y      2065 2070 2075 2080 2086 2090 2100 2115
+    width   155  145  135  127  119  115  111  109
+
+and the left edge, read column by column between the two rows of caps where nothing
+overlaps it, gives (53, 2056) (56, 2060) (58, 2063) (60, 2065) (62, 2067) (65, 2070)
+(70, 2075) (72, 2078) (74, 2080) (75, 2082) (77, 2084).
+
+**Two columns were discarded rather than fitted, and that is the useful part.** At x 50 and
+left of it the teardrop's bottom sits above the top row's caps, so the run of colour ends at
+the cap's bottom edge, 2051, and reads as the teardrop. Including x 50 moved a fitted radius
+by 16px. What caught it was a tangency check: the arc fitted to the clean columns came out
+centred at (94, 2032) with radius 47.5, and 94 - 47.5 is 46.5, the bulb's own left edge — a
+rounded rectangle's corner is tangent to its side, so a fit that lands on the side has found
+the shape. The fit including x 50 did not.
+
+**The curve is approximated, and it is drawn as one path.** Two arcs fit the silhouette, one
+leaving the bulb and one arriving at the cap, but their fitted radii do not satisfy the
+tangency they would need to meet — off by about 5% — so they were not trusted. What is drawn
+is a cubic with vertical tangents at both ends, from the bulb's side 50px above the cap's top
+edge to the cap's own width 25px below it, control points pulled 25px along each tangent.
+Against stock it reads:
+
+    y      1880 1890 1900 1910 2055 2060 2065 2070 2075 2080 2086 2090 2100 2120
+    stock   131  163  175  181  171  163  155  145  135  127  119  115  111  109
+    here    138  165  178  182  169  163  156  149  142  134  126  122  112  109
+
+Within a pixel from the top of the bulb to y 2065, and out by 3 to 4px a side at its worst
+around y 2075-2090, where the parallel stem had been out by 14. The residual is a fit that
+could be improved; the shape it replaced could not be, because it was the wrong shape.
+
+**Not verified.** The preview at 402pt, and the preview in light appearance.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

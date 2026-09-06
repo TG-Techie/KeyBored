@@ -170,6 +170,87 @@ public enum StockMetrics {
   /// This is the one of the three that positions anything.
   public static let suggestionBarHeight: CGFloat = 104 / 3
 
+  /// The key preview's shape, as multiples of the cap it rises from.
+  ///
+  /// Stock draws a teardrop: a rounded bulb above the key, joined to it by a narrower
+  /// stem, so that the two read as one object. Measured 2026-09-06 on a 430pt simulator
+  /// against a stock keyboard in a Contacts search field, dark, from a 250ms press —
+  /// a longer one opens the accent picker instead, which is a different thing entirely
+  /// and was mistaken for this one twice:
+  ///
+  ///     cap            109 x 135 px
+  ///     bulb           183 wide, 182 tall, top 207px above the cap's top
+  ///     stem           149 wide, running from the bulb down into the cap
+  ///
+  /// **Ours cannot rise as far as stock's and that is a platform limit, not a choice.**
+  /// A keyboard extension's drawing is cut at its input view's edge by the compositor —
+  /// no view in the chain clips, and it is still cut — so a top-row preview has only the
+  /// suggestion bar's 104px to live in against stock's 207. Reserving the room by asking
+  /// for a taller input view does keep the rows in place, but iOS extends the visible
+  /// plate with it and the keyboard then stands 34pt taller than stock, which is a worse
+  /// defect than the one it fixes. Measured, tried, reverted. So the preview is stock's
+  /// shape at stock's size wherever it fits, and pushed down into view on the top row.
+  /// SPEC.md Appendix A.19.
+  public static let previewBulbWidthInCaps: CGFloat = 183 / 109
+  /// Where the bulb's straight sides give out and the teardrop starts drawing in toward
+  /// the cap, and where it arrives: 50px above the cap's top edge and 25px below it.
+  ///
+  /// **There is no stem.** An earlier reading measured the shape at one row, found it
+  /// 149px wide, and drew a parallel-sided stem of that width. Stock's silhouette narrows
+  /// the whole way down — 155px at y 2065, 145 at 2070, 135 at 2075, 127 at 2080, 119 at
+  /// 2086, 115 at 2090, 111 at 2100, and the cap's own 109 from about 2115 — so a single
+  /// row could have been read as any width at all.
+  ///
+  /// **The curve is fitted, not solved.** The left silhouette was read column by column
+  /// and the pairs are in SPEC.md A.19. Two circular arcs fit it, one leaving the bulb
+  /// and one arriving at the cap, but the two fits do not meet the tangency their own
+  /// radii require — off by 5% — so they are not trustworthy enough to draw from. What is
+  /// drawn is a cubic with vertical tangents at both ends, and it sits within about 7px
+  /// of every measured point where the old parallel stem was out by 14. Recorded as an
+  /// approximation so the next pass improves it rather than re-deriving it.
+  public static let previewTaperTopInCaps: CGFloat = 50 / 135
+  public static let previewTaperBottomInCaps: CGFloat = 25 / 135
+
+  /// How far the cubic's control points sit along the tangent at each end. It is what
+  /// sets how sharply the shape turns; 25px is the value that put the fit inside 7px.
+  public static let previewTaperPullInCaps: CGFloat = 25 / 135
+
+  public static let previewRiseInCaps: CGFloat = 207 / 135
+
+  /// The bulb's corners are softer than a key cap's: 36px against the cap's 21px.
+  ///
+  /// Measured rather than guessed, because the eye reads a corner as a width error. Each
+  /// row of the bulb's top 32px was scanned for its run of bulb colour and the resulting
+  /// widths fitted to a rounded rectangle, on stock and on this keyboard side by side in
+  /// the same field. Stock fits 34px and this keyboard, drawing 42px, fits 40px: the
+  /// estimator reads 2px light on a known radius, so stock draws 36. Absolute points
+  /// rather than a fraction of a cap, the same as `capCornerRadius`, because that is how
+  /// it behaves across the two phone widths.
+  public static let previewBulbCornerRadius: CGFloat = 36 / 3
+
+
+  /// The letter in the preview is drawn half again the size of the letter on a cap: 37.5pt
+  /// against the cap's 25pt.
+  ///
+  /// Measured as a ratio of x-heights, because a point size is not visible in a
+  /// screenshot. In one capture at 430pt and 3x, stock's unpressed `e` cap measures 40px
+  /// tall and the `a` in stock's preview measures 60px. This keyboard's own `e` measures
+  /// the same 40px, which is what makes the cap's 25pt the right thing to scale from.
+  ///
+  /// A constant rather than a fraction of the cap height, because the cap's own letter is
+  /// a constant — `KeyboardView` draws 25pt at either phone width. That is an assumption
+  /// this shares rather than one it adds: neither has been measured at 402pt.
+  public static let previewLetterPointSize: CGFloat = 25 * 60 / 40
+
+  /// The box the letter is centred in, measured down from the top of the preview.
+  ///
+  /// Not the bulb, and not any part of the shape: a `UILabel` centres its *line box*, and
+  /// a line box is taller than the glyph and not symmetric about it, so the two cannot be
+  /// derived from one another. Read off instead. Stock's `a` occupies y 1965-2024 with
+  /// the preview's top at 1879; centring in a 201px box put ours at 1960-2018, and 211
+  /// puts it on stock's.
+  public static let previewLetterBoxInCaps: CGFloat = 211 / 135
+
   /// **The cap height depends on the phone, and there are two of them.**
   ///
   /// Measured 2026-09-05, stock keyboard, Contacts search field, dark, @3x:

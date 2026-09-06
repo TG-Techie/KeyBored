@@ -75,10 +75,24 @@ final class KeyboardView: UIView {
   /// `handleInputModeList(from:with:)` to it. See `wireGlobe(to:action:)`.
   private let globeControl = UIControl()
 
-  /// The key preview: the little bubble that appears above a key while it is held.
-  /// Part of what makes the keyboard read as stock, so it is a requirement rather than
-  /// a flourish. See SPEC.md section 4.
-  private let preview = UILabel()
+  /// The key previews currently on screen, one per finger.
+  ///
+  /// **One shared label was correct only because of a bug.** Until 0.0.6 this view had
+  /// `isMultipleTouchEnabled` false, so UIKit delivered one finger and discarded the rest
+  /// and there was never a second preview to draw. Turning multi-touch on removed that
+  /// accidental guarantee and left the single label behind: the second finger down
+  /// retargeted the first finger's preview instead of adding one, and the first finger
+  /// lifting hid it while the second was still down. Reported on 0.0.7 as the preview
+  /// "still not reliably showing when a tap matches a key".
+  ///
+  /// A preview belongs to a finger, so it is keyed by one. Part of what makes the
+  /// keyboard read as stock, so it is a requirement rather than a flourish.
+  /// See SPEC.md section 4.
+  private var previews: [ObjectIdentifier: KeyPreview] = [:]
+
+  /// Previews that have been used and are waiting to be used again, so that typing does
+  /// not allocate a view per keystroke.
+  private var sparePreviews: [KeyPreview] = []
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -208,7 +222,6 @@ final class KeyboardView: UIView {
       addSubview(cap)
       keyViews[key.id] = cap
     }
-    bringSubviewToFront(preview)
     layOutBar()
   }
 
@@ -469,42 +482,64 @@ final class KeyboardView: UIView {
   // MARK: - Touches
 
   private func setUpPreview() {
-    preview.textAlignment = .center
-    preview.font = .systemFont(ofSize: 38)
-    preview.textColor = Self.keyTextColor
-    preview.backgroundColor = Self.capColor
-    preview.layer.cornerRadius = StockMetrics.capCornerRadius
-    preview.layer.masksToBounds = true
-    preview.isHidden = true
-    // The preview for a top-row key sits above the top of this view. Whether it is
-    // allowed to draw there is the host's decision, not ours, so this asks and
-    // `previewFrame(above:)` handles the answer either way.
+    // Asked for and not granted. A keyboard extension's drawing is cut at its input
+    // view's edge by the process that composites it, not by any view in the chain — every
+    // ancestor up to `_UIHostedWindow` reports `clipsToBounds` false and the preview is
+    // sliced flat anyway. This stays because it is the truthful statement of intent and
+    // costs nothing; `previewFrame(above:)` deals with the answer.
     clipsToBounds = false
-    addSubview(preview)
   }
 
-  /// Where the preview goes for a key, kept inside this view when it has to be.
+  /// A preview for this finger, reused if one is going spare.
+  private func preview(for touch: UITouch) -> KeyPreview {
+    let id = ObjectIdentifier(touch)
+    if let existing = previews[id] { return existing }
+    let view = sparePreviews.popLast() ?? KeyPreview()
+    previews[id] = view
+    addSubview(view)
+    bringSubviewToFront(view)
+    return view
+  }
+
+  /// Takes this finger's preview off the screen and keeps it for the next one.
+  private func dismissPreview(for touch: UITouch) {
+    guard let view = previews.removeValue(forKey: ObjectIdentifier(touch)) else { return }
+    view.removeFromSuperview()
+    sparePreviews.append(view)
+  }
+
+  /// Where the preview goes for a key: stock's teardrop, pushed into view when it has to be.
   ///
-  /// A top-row key's preview wants to be at a negative `y`. On the stock keyboard it goes
-  /// there, into the app above; a custom keyboard's input view may be clipped by its host
-  /// instead, and on a phone on 2026-09-05 it was — the preview came out as a rectangle
-  /// with its top sliced flat, sitting over the candidate bar and hiding a suggestion.
+  /// The rectangle runs from the top of the bulb down to the bottom of the cap, because
+  /// the stem joins the two and the whole shape is drawn inside it. Its width is the
+  /// bulb's, which overhangs the cap on both sides. `KeyPreview` draws the bulb, the stem
+  /// and the letter from these bounds and the cap height it is given.
   ///
-  /// So it is clamped, and a clamped preview overlaps the bar. It is opaque and it is
-  /// brought to the front, so it covers the part of a word it sits on and leaves the rest
-  /// legible, which is what a key floating over a bar looks like.
+  /// **Rows 1 to 3 get stock's geometry exactly; row 0 cannot have it.** Stock's bulb
+  /// rises 207px above a 135px cap, and above row 0 this keyboard owns only the 104px of
+  /// its suggestion bar — a keyboard extension's drawing is cut at its input view's edge
+  /// by the compositor, so the rest is simply not drawn. It was cut on a phone on
+  /// 2026-09-05, and on 2026-09-06 the cause was established rather than inferred: every
+  /// ancestor up to `_UIHostedWindow` reports `clipsToBounds` false and the preview is
+  /// sliced flat all the same.
   ///
-  /// **It used to hide the whole slot underneath it, and that was the flicker.** Hiding a
-  /// third of the bar on every top-row keystroke and restoring it on release is a
-  /// suggestion blinking out and back once per letter, which is what "the suggested word
-  /// keeps flickering or fading in and out" describes — reported 2026-09-05, still there
-  /// in the 0.0.3 build, and visible in `IMG_8416` as a blank middle cell in the one frame
-  /// captured mid-press. Covering part of a word for the length of a press is the smaller
-  /// wrong, and it is the one that does not move.
+  /// Asking for a taller input view so the room is ours was tried and reverted the same
+  /// day. The rows do stay where they were, but iOS extends the visible plate with the
+  /// input view, so the keyboard stood 34pt taller than stock with an empty band above
+  /// the bar — the shape of the defect he had reported that morning. SPEC.md A.19.
+  ///
+  /// So row 0's preview is pushed down until it fits, which puts it over the bar. It is
+  /// opaque and in front, so it covers the part of a word it sits on and leaves the rest
+  /// legible. **It used to hide the whole slot underneath it, and that was the flicker** —
+  /// a suggestion blinking out and back once per top-row keystroke, reported 2026-09-05
+  /// and visible in `IMG_8416` as a blank middle cell in the one frame captured mid-press.
+  /// Covering part of a word for the length of a press is the smaller wrong.
   private func previewFrame(above key: Key) -> CGRect {
+    let cap = key.frame
+    let width = cap.width * StockMetrics.previewBulbWidthInCaps
+    let top = cap.minY - cap.height * StockMetrics.previewRiseInCaps
     let frame = CGRect(
-      x: key.frame.minX - 6, y: key.frame.minY - key.frame.height - 4,
-      width: key.frame.width + 12, height: key.frame.height + 4)
+      x: cap.midX - width / 2, y: top, width: width, height: cap.maxY - top)
     return frame.minY < 0 ? frame.offsetBy(dx: 0, dy: -frame.minY) : frame
   }
 
@@ -619,13 +654,11 @@ final class KeyboardView: UIView {
         if let text = bubbleText(slot) { onBubble?(text) }
       }
     }
-    if held.isEmpty { preview.isHidden = true }
   }
 
   override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
     for touch in touches { release(touch) }
     if held.isEmpty {
-      preview.isHidden = true
       // A cancellation can arrive for a touch this view never recorded, so the whole
       // plate is put back rather than only the keys it remembers holding down.
       for key in geometry?.keys ?? [] {
@@ -643,10 +676,12 @@ final class KeyboardView: UIView {
       startDeleteRepeat(for: key)
     }
     guard let letter = key.letter else { return }
-    preview.text = isShifted ? String(letter).uppercased() : String(letter)
-    preview.frame = previewFrame(above: key)
-    preview.isHidden = false
-    bringSubviewToFront(preview)
+    let view = preview(for: touch)
+    view.show(
+      String(isShifted ? Character(String(letter).uppercased()) : letter),
+      in: previewFrame(above: key),
+      capHeight: key.frame.height,
+      capWidth: key.frame.width)
   }
 
   /// Repeats the delete while the key is held. The point reported is the key's own
@@ -693,6 +728,7 @@ final class KeyboardView: UIView {
   /// up over: a finger that slides between keys leaves the first one lit otherwise.
   private func release(_ touch: UITouch) {
     let id = ObjectIdentifier(touch)
+    dismissPreview(for: touch)
     if case .key(let key)? = held.removeValue(forKey: id) {
       keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
     }
@@ -934,6 +970,116 @@ final class KeyboardView: UIView {
 
 /// One key cap. A view rather than a button so that the touch handling stays in one
 /// place and every touch reports its position, which a `UIControl` action would not.
+/// The bubble that rises from a key while a finger is on it.
+///
+/// It is a shape rather than a rounded label, because stock's is a teardrop: a bulb above
+/// the key joined to it by a narrower stem, so the two read as one object rather than as
+/// a rectangle floating over another rectangle. The proportions are measured and live in
+/// `StockMetrics.preview…InCaps`; this draws them.
+///
+/// One of these belongs to one finger. See `KeyboardView.previews` for why that is the
+/// unit, which is a story about a bug that was holding another bug up.
+final class KeyPreview: UIView {
+  private let label = UILabel()
+  private let shape = CAShapeLayer()
+  private var capHeight: CGFloat = 0
+  private var capWidth: CGFloat = 0
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    isUserInteractionEnabled = false
+    backgroundColor = .clear
+    shape.fillColor = KeyboardView.capColor.cgColor
+    layer.addSublayer(shape)
+    label.textAlignment = .center
+    label.textColor = KeyboardView.keyTextColor
+    addSubview(label)
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  /// Puts this preview over a key, with the letter that key is currently drawing.
+  ///
+  /// The cap's size comes in rather than being derived from the frame, because the frame
+  /// is clamped on the top row and the shape has to keep its proportions when it is.
+  func show(_ text: String, in frame: CGRect, capHeight: CGFloat, capWidth: CGFloat) {
+    self.capHeight = capHeight
+    self.capWidth = capWidth
+    label.text = text
+    self.frame = frame
+    setNeedsLayout()
+    layoutIfNeeded()
+    isHidden = false
+  }
+
+  /// The whole outline, in one path: a bulb with soft shoulders whose sides draw in to
+  /// meet the cap it belongs to.
+  ///
+  /// Drawn by hand rather than assembled out of rounded rectangles because stock's is not
+  /// two shapes. A bulb plus a parallel stem leaves a step where they meet and is 14px too
+  /// wide per side by the time it reaches the cap; see `StockMetrics.previewTaperTopInCaps`
+  /// for what was measured and what is approximated.
+  private func teardrop() -> UIBezierPath {
+    let capTop = bounds.maxY - capHeight
+    let taperTop = capTop - capHeight * StockMetrics.previewTaperTopInCaps
+    let taperBottom = capTop + capHeight * StockMetrics.previewTaperBottomInCaps
+    let pull = capHeight * StockMetrics.previewTaperPullInCaps
+    let capLeft = bounds.midX - capWidth / 2
+    let capRight = bounds.midX + capWidth / 2
+    // The shoulders cannot be rounder than the straight part of the side is long, which
+    // is what would happen if a phone ever gave the preview less room than it wants.
+    let shoulder = min(
+      StockMetrics.previewBulbCornerRadius, (taperTop - bounds.minY) / 2, bounds.width / 2)
+    let foot = min(StockMetrics.capCornerRadius, capWidth / 2)
+
+    let path = UIBezierPath()
+    path.move(to: CGPoint(x: bounds.minX, y: bounds.minY + shoulder))
+    path.addArc(
+      withCenter: CGPoint(x: bounds.minX + shoulder, y: bounds.minY + shoulder),
+      radius: shoulder, startAngle: .pi, endAngle: .pi * 1.5, clockwise: true)
+    path.addLine(to: CGPoint(x: bounds.maxX - shoulder, y: bounds.minY))
+    path.addArc(
+      withCenter: CGPoint(x: bounds.maxX - shoulder, y: bounds.minY + shoulder),
+      radius: shoulder, startAngle: .pi * 1.5, endAngle: 0, clockwise: true)
+    path.addLine(to: CGPoint(x: bounds.maxX, y: taperTop))
+    path.addCurve(
+      to: CGPoint(x: capRight, y: taperBottom),
+      controlPoint1: CGPoint(x: bounds.maxX, y: taperTop + pull),
+      controlPoint2: CGPoint(x: capRight, y: taperBottom - pull))
+    // The bottom of the preview lies over the cap, so it ends the shape the cap does.
+    path.addLine(to: CGPoint(x: capRight, y: bounds.maxY - foot))
+    path.addArc(
+      withCenter: CGPoint(x: capRight - foot, y: bounds.maxY - foot),
+      radius: foot, startAngle: 0, endAngle: .pi * 0.5, clockwise: true)
+    path.addLine(to: CGPoint(x: capLeft + foot, y: bounds.maxY))
+    path.addArc(
+      withCenter: CGPoint(x: capLeft + foot, y: bounds.maxY - foot),
+      radius: foot, startAngle: .pi * 0.5, endAngle: .pi, clockwise: true)
+    path.addLine(to: CGPoint(x: capLeft, y: taperBottom))
+    path.addCurve(
+      to: CGPoint(x: bounds.minX, y: taperTop),
+      controlPoint1: CGPoint(x: capLeft, y: taperBottom - pull),
+      controlPoint2: CGPoint(x: bounds.minX, y: taperTop + pull))
+    path.close()
+    return path
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    shape.path = teardrop().cgPath
+    shape.fillColor = KeyboardView.capColor.resolvedColor(with: traitCollection).cgColor
+
+    // The letter is drawn at stock's size, half again the size of the one on the cap, and
+    // centred in a box measured down from the top of the preview rather than in any part
+    // of the shape. See `StockMetrics.previewLetterBoxInCaps`.
+    label.font = .systemFont(ofSize: StockMetrics.previewLetterPointSize)
+    label.textColor = KeyboardView.keyTextColor.resolvedColor(with: traitCollection)
+    label.frame = CGRect(
+      x: 0, y: 0, width: bounds.width,
+      height: capHeight * StockMetrics.previewLetterBoxInCaps)
+  }
+}
+
 final class KeyCap: UIView {
   let label = UILabel()
 
