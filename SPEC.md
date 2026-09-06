@@ -1669,6 +1669,26 @@ against stock in the same field. The boundary at which it starts applying is not
 caveat — nothing has been measured between 402 and 430, and his 430pt phone is assumed to
 behave as the 440 simulator does because both are above the line.
 
+**A third width, and his.** Repeated on a 430pt simulator, which is exactly his phone:
+with the 7px inset the four bands read 1917, 2085, 2253 and 2421 in both keyboards, all
+135 tall. So the inset is 13 at 402, 7 at 430 and 7 at 440 — three points, and the step
+function fits them. It is still a step function by assumption rather than by measurement,
+because nothing has been measured between 402 and 430.
+
+**The one thing the differential found that was not vertical.** Shift and delete were the
+only keys on the board whose widths did not match stock: 144 and 145 against stock's 146
+and 147, measured at 1290 itself so that no scaling is in the way — stock's shift runs
+x 20-165 and its delete 1124-1270. The old numbers were confirmed wrong independently at
+402pt, where stock reads 136 and 137 and the corrected fractions predict 136.5 and 137.4
+against the old ones' 134.6 and 135.6. After the correction our shift reads 20-165, stock's
+exactly.
+
+**A 1px residual on the right edge, recorded and not chased.** Every rightmost key ends one
+pixel short of stock's — our delete at 1123-1269 against stock's 1124-1270, our `p` at
+1161-1269 against 1162-1270 — while every leftmost key starts on stock's 20 exactly. It is
+a third of a point and it is rounding in `width - margin - keyWidth`; it would want pixel
+snapping across every frame, which is a larger change than the error justifies.
+
 **Not yet run, and named so it is not mistaken for done:** the light appearance, the numeric
 and symbol planes, the pressed states, the key preview's geometry, and any host other than
 Contacts. This entry covers the letter plane in dark on two widths.

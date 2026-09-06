@@ -97,8 +97,16 @@ public enum StockMetrics {
   public static let columnGapFraction: CGFloat = 18 / referenceWidthPx
 
   /// Widths of the keys that are not plain letters, as fractions of the width.
-  public static let shiftWidthFraction: CGFloat = 144 / referenceWidthPx
-  public static let deleteWidthFraction: CGFloat = 145 / referenceWidthPx
+  ///
+  /// Shift and delete were 144 and 145 until 2026-09-06, when a full differential against
+  /// stock found them to be the only thing on the keyboard that did not match. Stock's are
+  /// 146 and 147 at this reference width, measured at 1290 itself so no scaling is in the
+  /// way: shift runs x 20-165 and delete 1124-1270 in a Contacts search field, dark, on a
+  /// 430pt simulator. Confirmed independently at 402pt, where stock reads 136 and 137 and
+  /// the new fractions predict 136.5 and 137.4 while the old ones predicted 134.6 and
+  /// 135.6 — and 134 and 135 is what ours measured there. SPEC.md Appendix A.18.
+  public static let shiftWidthFraction: CGFloat = 146 / referenceWidthPx
+  public static let deleteWidthFraction: CGFloat = 147 / referenceWidthPx
   public static let planeKeyWidthFraction: CGFloat = 299 / referenceWidthPx
   public static let returnWidthFraction: CGFloat = 300 / referenceWidthPx
 
