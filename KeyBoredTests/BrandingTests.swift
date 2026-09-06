@@ -17,3 +17,16 @@ import Testing
 @Test func theBundleCarriesTheBrand() {
   #expect(Branding.displayName == "BoreKey")
 }
+
+/// The space bar's corner mark is the only place the version is visible on a phone, so
+/// it is the only place a bundle key going missing would show — and it would show as the
+/// word "unknown" sitting on the keyboard rather than as anything failing. Both halves
+/// are read off the bundle by design; this is what notices when the bundle stops
+/// carrying them.
+@MainActor
+@Test func theSpaceBarMarkNamesTheKeyboardAndTheVersionItIs() {
+  let mark = KeyboardView.spaceBarMark
+  #expect(mark.hasPrefix("BoreKey "))
+  #expect(!mark.contains("unknown"), "the mark reads \"\(mark)\", so a bundle key is missing")
+  #expect(mark.dropFirst("BoreKey ".count).allSatisfy { $0.isNumber || $0 == "." })
+}

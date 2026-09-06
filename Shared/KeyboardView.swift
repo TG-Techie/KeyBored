@@ -200,6 +200,15 @@ final class KeyboardView: UIView {
     }
   }
 
+  /// What the space bar says in its corner: the keyboard's name and the version it is.
+  ///
+  /// Both read off the bundle rather than written here — `Branding.displayName` and
+  /// `KeyBoredVersion.marketing` — so the mark cannot drift from what shipped, which is
+  /// the whole point of putting a version on screen. Stock's own mark is a single letter
+  /// and this is a dozen; at 13pt that is about a fifth of the space bar's width on a
+  /// 430pt phone, so it stays in the corner rather than reaching the middle.
+  static var spaceBarMark: String { "\(Branding.displayName) \(KeyBoredVersion.marketing)" }
+
   private func rebuildKeys() {
     keyViews.values.forEach { $0.removeFromSuperview() }
     keyViews.removeAll()
@@ -216,6 +225,9 @@ final class KeyboardView: UIView {
         UIImage(systemName: $0, withConfiguration: Self.symbolConfiguration)
       }
       cap.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
+      cap.mark.text = key.role == .space ? Self.spaceBarMark : nil
+      cap.mark.textColor =
+        Self.keyTextColor.withAlphaComponent(StockMetrics.spaceMarkAlpha)
       cap.isAccessibilityElement = true
       cap.accessibilityTraits = .keyboardKey
       cap.accessibilityLabel = accessibilityLabel(for: key)
@@ -1097,6 +1109,13 @@ final class KeyCap: UIView {
   /// side-by-side and was the fifth thing Jonah picked out of one.
   let glyph = UIImageView()
 
+  /// The faint corner mark, which only the space bar has. Stock puts a single letter
+  /// there; this keyboard puts its name and version, which is what Jonah asked for. It is
+  /// its own label rather than `label` with a different alignment because the space bar's
+  /// `label` is empty on purpose — stock's space bar is blank — and one label cannot be
+  /// both blank in the middle and lettered in the corner.
+  let mark = UILabel()
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     layer.cornerRadius = StockMetrics.capCornerRadius
@@ -1113,7 +1132,25 @@ final class KeyCap: UIView {
     glyph.frame = bounds
     glyph.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     addSubview(glyph)
+    mark.textAlignment = .right
+    mark.font = .systemFont(ofSize: StockMetrics.spaceMarkPointSize)
+    addSubview(mark)
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    // The mark sits in the bottom-right corner at stock's inset, and the inset is to the
+    // *baseline*, not to the bottom of the line box. Measuring to the line box put it
+    // 10px high — the descender — which is the same mistake the key preview's letter made
+    // and for the same reason: a label's frame is not where its ink is.
+    let size = mark.sizeThatFits(bounds.size)
+    let font = mark.font ?? .systemFont(ofSize: StockMetrics.spaceMarkPointSize)
+    mark.frame = CGRect(
+      x: bounds.maxX - StockMetrics.spaceMarkInset - size.width,
+      y: bounds.maxY - StockMetrics.spaceMarkInset - font.ascender,
+      width: size.width,
+      height: font.lineHeight)
+  }
 }

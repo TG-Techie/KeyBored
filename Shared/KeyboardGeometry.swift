@@ -367,6 +367,24 @@ public enum StockMetrics {
   /// until it reaches full width. The keyboard drew 5pt before that was measured.
   public static let capCornerRadius: CGFloat = 21 / 3
 
+  /// The faint mark stock leaves in the corner of its space bar, measured off a 430pt
+  /// phone at 3x in dark appearance.
+  ///
+  /// Stock draws a single letter there. Its uppercase `A` measures 28px tall, which is
+  /// 13pt at SF's cap-height ratio; its bounding box ends 18px from the cap's right edge
+  /// and 18px from its bottom; and its strongest pixel is `#787878` on a `#3D3D3D` cap,
+  /// which is white at 0.30 to within a value — the same white the caps draw their
+  /// letters in, at that alpha, lands on `#777777`.
+  ///
+  /// This keyboard puts its own name and version there instead of a letter. That was
+  /// Jonah's ask, 2026-09-06 08:30: "you could put the keyboard name and version of the
+  /// space key like how iOS does for 'English (US)'". The corner rather than the middle
+  /// because stock's space bar is blank in the middle and a permanent label there would
+  /// be the first thing that does not look like stock.
+  public static let spaceMarkPointSize: CGFloat = 13
+  public static let spaceMarkInset: CGFloat = 18 / 3
+  public static let spaceMarkAlpha: CGFloat = 0.30
+
   /// Total height the extension asks for, excluding the home-indicator safe area.
   ///
   /// This is the height of the input view, so it counts `suggestionBarHeight` and not
