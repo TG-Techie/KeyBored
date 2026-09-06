@@ -284,4 +284,7 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   typing that inserted nothing into a host app. Both are the reason the section above
   exists.
 
-The tree is at 0.0.3 build 1, which has not been uploaded.
+- **0.0.3 build 1.** Uploaded at 20:51 EDT from commit `9932d04` with a clean tree, after
+  typing "Hi there" into Safari with it on a simulator in both appearances.
+
+The tree is at 0.0.3 build 1, which is spent. Bump before archiving again.
