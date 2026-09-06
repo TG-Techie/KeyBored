@@ -602,4 +602,22 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   letter rows in both shift states: every row within one pixel, and the two states on the
   same baseline as each other, which they were not before.
 
-The tree is at 0.0.15 build 1, which is spent. Bump before archiving again.
+- **0.0.16 build 1.** Uploaded at 14:52:45 EDT on 2026-09-06 from commit `c24a9e9` with a
+  clean tree, 106 tests passing. One change.
+
+  **The taps can say two words.** `isnthere` is `is there` with the space struck as an `n`,
+  and reading it that way is a reading of the taps rather than an edit bolted onto one —
+  every tap accounted for, none invented — so it costs 1.2 against a slack of 4.0 and
+  commits like any other correction. SPEC.md A.34.
+
+  A split is built out of the two things that look at what happened and never out of the
+  transition that does not. The tap that becomes the space must have the space bar in its
+  own neighbourhood, which only rows 2 and 3 have, so `together` cannot split at `g` or `h`
+  at any price. And every other tap keeps the letter it landed on, which is what stopped
+  `jonah` committing as `ho ah`.
+
+  **Typed on a 402pt simulator in Contacts' search field**: `isnthere` then space went in as
+  `Is there `; `together` then space stayed `Together`; `hrllo` then space still corrected
+  to `hello`.
+
+The tree is at 0.0.16 build 1, which is spent. Bump before archiving again.
