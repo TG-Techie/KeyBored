@@ -2519,6 +2519,64 @@ visible, so the vertical origin is not the screen's and comparing row tops would
 against an unknown offset.
 
 
+### A.32 — the letter on a cap is two sizes, not one
+
+Jonah sent two captures at 13:52 on 2026-09-06 with no text:
+`~/Downloads/bar/keyboard-evidence/IMG_8441.png` is stock and `IMG_8442.png` is BoreKey
+0.0.12, both on his 430pt phone at 3x, both light, both **shifted** — which is the state in
+which the two differ and the reason this survived every side-by-side before it.
+
+**The sizes were fitted by matching ink in one renderer, not by dividing out a ratio.** A
+point size is not visible in a screenshot, and a cap-height ratio applied to one carries a
+renderer's rounding into the answer — an offline probe that reproduced this keyboard's own
+25pt letters exactly still landed a pixel off stock in the simulator. So stock was captured
+in the Contacts search field on a 402pt simulator, light, @3x, this keyboard was captured in
+the same field on the same simulator, and the point size was stepped until the ink measured
+the same. The cap figures were confirmed against his 430pt capture.
+
+| drawn | stock ink | ours before | ours after |
+|---|---|---|---|
+| `E` on a cap | 46 px | 53 px at 25 pt | 46 px at 21.75 pt |
+| `e` on a cap | 40 px | 40 px at 25 pt | 40 px at 25 pt |
+| `E` in a preview | 76 px | 80 px at 37.5 pt | 76 px at 35.75 pt |
+| `e` in a preview | 61 px | 59 px at 37.5 pt | 61 px at 38.25 pt |
+| `123` on a cap | 82x40 px | 82x40 px at 18 pt | unchanged |
+
+`W`, `A`, `O` and `M` were measured with `E` and match stock exactly at 21.75pt; `w` and `a`
+were measured with `e` and match at 25pt.
+
+**One size for both cases is the defect.** 25pt is exactly stock's minuscule and 15% over
+its capital, so the unshifted keyboard was right and the shifted one was visibly oversized.
+Nothing that measures one shift state can find that, and every side-by-side before this was
+taken in one.
+
+**Stock is not one font at one size with the case doing the rest.** SF's cap height is
+0.714em and its x-height 0.545em, so a single size would put `E` and `e` in a fixed 1.31
+ratio; stock's caps are 46 and 40, a ratio of 1.15, and its previews 76 and 61, a ratio of
+1.25. Two independent sizes in each place, and the preview's pair is not the cap's pair
+scaled.
+
+**The size is a constant and not a fraction of the cap.** The same 46px and 40px are drawn
+on a 402pt phone and a 430pt one, whose caps are 129px and 135px tall.
+
+**Where the size comes from is the architectural half.** It is now derived from the string
+being drawn — `StockMetrics.capTextPointSize(for:)` — and assigned through `KeyCap.text`,
+which is the only way to set a cap's text. Two call sites write a letter onto a cap: building
+the keyboard, and the shift key rewriting all of them at once. When the size was chosen once
+at build time the second one silently kept the first one's, so a keyboard built unshifted and
+then shifted drew capitals at the minuscule's size. A cap whose letter and whose size
+disagree is no longer a state this can express.
+
+**A.30's two recorded positions moved with the size**, because the preview's letter box is
+fixed and the ink is centred in it: a minuscule now sits 20.3pt below the bulb's top and
+45.6pt above its cap on an unclipped row, against 21.0 and 44.9 at the old single 37.5pt.
+The rule A.30 states is unchanged and its test still asserts it; only the two numbers that
+follow from the point size moved.
+
+**Not measured:** what stock does with punctuation caps, which this draws at the title's 18pt;
+and what it does with a script whose letters have no case, which this draws at the minuscule's
+size because `Character.isUppercase` answers false for them.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

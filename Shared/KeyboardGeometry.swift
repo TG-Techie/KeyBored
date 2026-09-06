@@ -286,18 +286,59 @@ public enum StockMetrics {
   public static let previewBulbCornerRadius: CGFloat = 36 / 3
 
 
-  /// The letter in the preview is drawn half again the size of the letter on a cap: 37.5pt
-  /// against the cap's 25pt.
+  /// **A letter's point size is a property of the letter, not of the key it sits on.**
+  /// Stock sets a capital smaller than a minuscule, and it is not a small difference: on a
+  /// cap it is 21.75pt against 25pt, and in the preview 35.75pt against 38.25pt.
   ///
-  /// Measured as a ratio of x-heights, because a point size is not visible in a
-  /// screenshot. In one capture at 430pt and 3x, stock's unpressed `e` cap measures 40px
-  /// tall and the `a` in stock's preview measures 60px. This keyboard's own `e` measures
-  /// the same 40px, which is what makes the cap's 25pt the right thing to scale from.
+  /// **The numbers were found by matching ink, not by dividing out a ratio.** A point size
+  /// is not visible in a screenshot, and a cap-height ratio applied to one is a derivation
+  /// with a renderer's rounding inside it. So stock was captured in the Contacts search
+  /// field on a 402pt simulator, light, @3x, this keyboard was captured in the same field
+  /// on the same simulator, and the size was stepped until the ink measured the same. Every
+  /// number below is that comparison and not an estimate:
   ///
-  /// A constant rather than a fraction of the cap height, because the cap's own letter is
-  /// a constant — `KeyboardView` draws 25pt at either phone width. That is an assumption
-  /// this shares rather than one it adds: neither has been measured at 402pt.
-  public static let previewLetterPointSize: CGFloat = 25 * 60 / 40
+  ///     drawn            stock ink        ours       at
+  ///     E on a cap        46 px           46 px      21.75 pt   (also W, A, O, M)
+  ///     e on a cap        40 px           40 px      25 pt      (also w, a)
+  ///     E in a preview    76 px           76 px      35.75 pt
+  ///     e in a preview    61 px           61 px      38.25 pt
+  ///     123 on a cap      82 x 40 px      82 x 40    18 pt
+  ///
+  /// **One size for both cases is the defect this replaces.** The keyboard drew 25pt on
+  /// every letter cap, which is exactly stock's minuscule and 15% over its capital — so the
+  /// unshifted keyboard was right and the shifted one was visibly oversized, and no
+  /// side-by-side taken in one shift state can find that. It took Jonah sending a shifted
+  /// pair on 2026-09-06 at 13:52. Deriving the size from the string being drawn is what
+  /// stops one shift state from being right while the other is wrong.
+  ///
+  /// **Stock is not one font at one size with the case doing the rest.** SF's cap height is
+  /// 0.714em and its x-height 0.545em, so a single size would put `E` and `e` in a fixed
+  /// 1.31 ratio. Stock's caps are 46 and 40 — a ratio of 1.15 — and its previews 76 and 61,
+  /// a ratio of 1.25. Two independent sizes in each place, and the preview's pair is not
+  /// the cap's pair scaled.
+  ///
+  /// **The sizes are constants and not fractions of a cap**, because stock's ink measures
+  /// the same 46px and 40px on a 402pt phone and on Jonah's 430pt one, whose caps are 129px
+  /// and 135px tall.
+  ///
+  /// The measurement is of English letters. Nothing says what stock does with a script
+  /// whose letters have no case; `Character.isUppercase` answers false for those, so they
+  /// are drawn at the minuscule's size.
+  public static func capTextPointSize(for text: String) -> CGFloat {
+    guard let only = text.first, text.count == 1, only.isLetter else { return keyTitlePointSize }
+    return only.isUppercase ? 21.75 : 25
+  }
+
+  /// The size of the letter shown in the preview above a pressed key. See
+  /// `capTextPointSize(for:)` for how both were measured and why they are two numbers.
+  public static func previewLetterPointSize(for text: String) -> CGFloat {
+    text.first?.isUppercase == true ? 35.75 : 38.25
+  }
+
+  /// What stock sets everything that is not a letter in: `123`, `ABC`, `#+=` and the word
+  /// on the return key. Confirmed rather than assumed — stock's `123` glyph measures 82px
+  /// by 40px on both phone widths and this keyboard's measures the same 82 by 40.
+  public static let keyTitlePointSize: CGFloat = 18
 
   /// The box the letter is centred in, measured down from the top of the preview.
   ///

@@ -176,13 +176,20 @@ func onlyTheOutermostColumnLeans(width: CGFloat) {
   let eAbove = e.frame.minY - (view.previewFrame(above: e).minY + eInk)
   let dAbove = d.frame.minY - (view.previewFrame(above: d).minY + dInk)
 
-  // The row that has its room is untouched: its ink sits 21.0pt below the bulb's top and
-  // 44.9pt above its cap, which is where the measured box has always put it.
-  #expect(abs(dInk - 21.0) < 0.5, "row 1's letter moved: \(dInk) below the bulb's top")
-  #expect(abs(dAbove - 44.9) < 0.5, "row 1's letter moved: \(dAbove) above its cap")
+  // The row that has its room is untouched: its ink sits 20.3pt below the bulb's top and
+  // 45.6pt above its cap, which is where the measured box puts it.
+  //
+  // **Both numbers move when the preview's point size does**, because the box is fixed and
+  // the ink is centred in it — a taller letter starts higher and reaches further above the
+  // cap. They were 21.0 and 44.9 while the preview drew every letter at 37.5pt; a minuscule
+  // is 38.25pt since `StockMetrics.previewLetterPointSize(for:)` started answering stock's
+  // two sizes rather than one. What the test is for is the relationship below, not these.
+  #expect(abs(dInk - 20.3) < 0.5, "row 1's letter moved: \(dInk) below the bulb's top")
+  #expect(abs(dAbove - 45.6) < 0.5, "row 1's letter moved: \(dAbove) above its cap")
 
   // The clipped row's letter rises inside its shorter bulb rather than staying put in it.
-  // It was 21.0 below the bulb's top and 15.3 above the cap; it is 11.7 and 23.0 now.
+  // Before A.30 it sat at the unclipped row's 21.0 below the bulb's top, which left it
+  // 15.3 above the cap and under the finger.
   #expect(eInk < dInk - 5, "the top row's letter did not rise: \(eInk) below the bulb's top")
   #expect(eAbove > 20, "the top row's letter is \(eAbove) above its cap, which is too low")
   // And it is still inside the shape rather than clamped off the top of it.

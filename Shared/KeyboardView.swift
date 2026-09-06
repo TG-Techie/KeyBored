@@ -182,10 +182,8 @@ final class KeyboardView: UIView {
     self.shift = shift
     guard let geometry else { return }
     for key in geometry.keys {
-      guard let letter = key.letter, let label = (keyViews[key.id] as? KeyCap)?.label else {
-        continue
-      }
-      label.text = isShifted ? String(letter).uppercased() : String(letter)
+      guard let letter = key.letter, let cap = keyViews[key.id] as? KeyCap else { continue }
+      cap.text = isShifted ? String(letter).uppercased() : String(letter)
     }
     for key in geometry.keys {
       guard let cap = keyViews[key.id] as? KeyCap else { continue }
@@ -217,9 +215,8 @@ final class KeyboardView: UIView {
     for key in geometry.keys {
       if key.role == .nextKeyboard && !needsNextKeyboard { continue }
       let cap = KeyCap(frame: key.frame)
-      cap.label.text = title(for: key)
-      cap.label.font = .systemFont(ofSize: key.letter != nil ? 25 : 18)
-      cap.label.textColor = Self.foregroundColor(for: key, appearance: returnAppearance)
+      cap.text = title(for: key)
+      cap.textColor = Self.foregroundColor(for: key, appearance: returnAppearance)
       cap.glyph.tintColor = Self.foregroundColor(for: key, appearance: returnAppearance)
       cap.glyph.image = symbolName(for: key).flatMap {
         UIImage(systemName: $0, withConfiguration: Self.symbolConfiguration)
@@ -462,6 +459,12 @@ final class KeyboardView: UIView {
   /// a wrong glyph name fails — silently, and only on a screen.
   var shiftGlyphForTesting: UIImage? { cap(for: .shift)?.glyph.image }
 
+  /// What a letter cap draws and how big it draws it, which are one answer and not two.
+  func letterForTesting(_ letter: Character) -> (text: String, pointSize: CGFloat)? {
+    guard let cap = cap(for: .letter(letter)), let text = cap.text else { return nil }
+    return (text, cap.pointSizeForTesting)
+  }
+
   /// Delivers a touch-down on a key without a `UITouch`, so a test can hold a key.
   func beginHoldForTesting(on role: KeyRole) {
     guard let key = geometry?.keys.first(where: { $0.role == role }) else { return }
@@ -476,7 +479,7 @@ final class KeyboardView: UIView {
   }
 
   private func capTitle(for role: KeyRole) -> String {
-    cap(for: role)?.label.text ?? ""
+    cap(for: role)?.text ?? ""
   }
 
   /// The word offered in a bar slot, or nothing when that slot is empty.
@@ -1167,7 +1170,8 @@ final class KeyPreview: UIView {
     // where the ink lands inside the measured box — the line box centred in it, then down
     // from its top by the part of the ascent the capital does not use — and the frame is
     // then placed so the ink arrives where it is wanted.
-    let font = UIFont.systemFont(ofSize: StockMetrics.previewLetterPointSize)
+    let font = UIFont.systemFont(
+      ofSize: StockMetrics.previewLetterPointSize(for: label.text ?? ""))
     label.font = font
     label.textColor = KeyboardView.keyTextColor.resolvedColor(with: traitCollection)
 
@@ -1193,7 +1197,31 @@ final class KeyPreview: UIView {
 }
 
 final class KeyCap: UIView {
-  let label = UILabel()
+  private let label = UILabel()
+
+  /// What this cap draws, and the only way to set it.
+  ///
+  /// Not the label, because **the point size follows the text**: stock sets a capital
+  /// smaller than a minuscule, so a cap whose letter changes has to change size with it.
+  /// Two call sites assign a cap's letter — building the keyboard, and the shift key
+  /// changing every letter at once — and when the size was a constant chosen at build
+  /// time the second one silently kept the first one's. Going through here means a cap
+  /// whose letter and whose size disagree is not a state this can be in.
+  var text: String? {
+    get { label.text }
+    set {
+      label.text = newValue
+      label.font = .systemFont(ofSize: StockMetrics.capTextPointSize(for: newValue ?? ""))
+    }
+  }
+
+  /// The colour of the text, which the cap's role and the keyboard's appearance decide.
+  var textColor: UIColor? {
+    get { label.textColor }
+    set { label.textColor = newValue }
+  }
+
+  var pointSizeForTesting: CGFloat { label.font.pointSize }
 
   /// Command keys that stock draws as a glyph rather than a word — shift, delete, return
   /// and the globe — draw an SF Symbol here instead of text in `label`. A symbol rather

@@ -235,3 +235,35 @@ private final class Sink: TextDocument {
   #expect(
     earlyByPlane[.symbols] == ["123", "ABC"], "symbols plane: \(earlyByPlane[.symbols] ?? [])")
 }
+
+/// A capital is not the same size as a minuscule, and the shift key has to carry the size
+/// across with the letter. SPEC.md A.32.
+///
+/// The half of this that failed in shipped code is the second half. Building the keyboard
+/// chose a font once and `setShift` then rewrote every letter's text without touching it,
+/// so whichever state the keyboard was built in had the right size and the other one did
+/// not. A test that only asked the freshly-built keyboard for its sizes would have passed
+/// against that code, which is why this one shifts.
+@MainActor
+@Test func aCapitalIsDrawnSmallerThanAMinuscule() {
+  let geometry = KeyboardGeometry(width: 402, plane: .letters)
+  let view = KeyboardView(
+    frame: CGRect(x: 0, y: 0, width: 402, height: StockMetrics.totalHeight(forWidth: 402)))
+  view.configure(geometry: geometry, shift: .off, needsNextKeyboard: false)
+
+  let lower = view.letterForTesting("q")
+  #expect(lower?.text == "q")
+  #expect(lower?.pointSize == StockMetrics.capTextPointSize(for: "q"))
+
+  view.setShift(.oneShot)
+  let upper = view.letterForTesting("q")
+  #expect(upper?.text == "Q")
+  #expect(upper?.pointSize == StockMetrics.capTextPointSize(for: "Q"))
+
+  // And the direction, so that swapping the two constants is a failure and not a rename.
+  #expect(StockMetrics.capTextPointSize(for: "Q") < StockMetrics.capTextPointSize(for: "q"))
+
+  // `123`, `ABC` and the return word are titles rather than glyphs and keep stock's 18pt.
+  #expect(StockMetrics.capTextPointSize(for: "123") == StockMetrics.keyTitlePointSize)
+  #expect(StockMetrics.capTextPointSize(for: "ABC") == StockMetrics.keyTitlePointSize)
+}
