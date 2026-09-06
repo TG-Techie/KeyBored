@@ -583,4 +583,23 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   76 and its `e` 61 against 61, `W`, `A`, `O`, `M`, `w` and `a` all exact. Light appearance
   only — a point size does not vary with appearance, and nothing else changed.
 
-The tree is at 0.0.14 build 1, which is spent. Bump before archiving again.
+- **0.0.15 build 1.** Uploaded at 14:42:53 EDT on 2026-09-06 from commit `4c38b7b` with a
+  clean tree, 102 tests passing. One change.
+
+  **The letter on a cap sits on stock's baseline.** Reported at 14:26 against 0.0.14, with
+  no glyph named, so both the cap's letter and the preview's were measured in all four
+  states. The preview was not it — on an unclipped row its letter lands on stock's ink to
+  the pixel. The cap's letter sat 4px low shifted and 7px low unshifted, on all three rows.
+  Stock puts one baseline in a cap and hangs both cases from it, half the minuscule's
+  x-height below the cap's centre. SPEC.md A.33.
+
+  Two causes. The label filled the cap and centred its line box, which is section 8.2's rule
+  for the third time. And `KeyCap.text` changes the font while the cap's bounds do not move,
+  so nothing asked for a new layout and a shifted cap kept the unshifted font's frame — the
+  setter now invalidates it.
+
+  **Verified on a 402pt simulator against stock in the same Contacts field**, all three
+  letter rows in both shift states: every row within one pixel, and the two states on the
+  same baseline as each other, which they were not before.
+
+The tree is at 0.0.15 build 1, which is spent. Bump before archiving again.
