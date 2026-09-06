@@ -18,7 +18,7 @@ settings:
     #   xcodebuild -scheme KeyBored -destination 'generic/platform=iOS Simulator' \
     #     CODE_SIGNING_ALLOWED=NO build
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.0.6"
+    MARKETING_VERSION: "0.0.7"
     CURRENT_PROJECT_VERSION: "1"
     # The one place the user-facing name is written. The project, the targets, the bundle
     # identifiers and the repository are all still KeyBored; BoreKey is only what a person
