@@ -546,4 +546,19 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   cannot express it. Verified after the fix in Contacts' search field at 402pt: `hrllo` goes
   in as `hello`, `Hrllo` as `Hello`, and `iphone` stands.
 
-The tree is at 0.0.12 build 1, which is spent. Bump before archiving again.
+- **0.0.13 build 1.** Uploaded at 13:51:20 EDT on 2026-09-06 from commit `4c86bfb` with a
+  clean tree, 100 tests passing. Run started 13:50:09. One change.
+
+  **The letter in a clipped key preview rises with the bulb.** Reported at 13:28: on the top
+  row the letter is "still obscured by the finger". That bulb cannot rise its full height,
+  so it is clamped, and the letter box was measured down from the bulb's top — so the letter
+  followed the top down and sat over the cap. It was 15.3pt above the top row's cap against
+  44.9pt on every other row at 402pt; it is 23.0pt now, with the other rows untouched. One
+  expression rather than a case for the top row: the letter keeps its measured height above
+  the cap, and where the bulb is too short it is centred in the room the bulb has. SPEC.md
+  A.30.
+
+  **Verified in the hand at 402pt**, pressing `e` in Contacts' search field and capturing
+  280ms into the press: the letter sits at the top of the shortened bulb, clear of the row.
+
+The tree is at 0.0.13 build 1, which is spent. Bump before archiving again.
