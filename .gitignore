@@ -15,3 +15,7 @@ Local.xcconfig
 # is the guard for when someone writes it here anyway.
 ExportOptions.plist
 UploadOptions.plist
+
+# Built from tools/tap.swift, per RELEASING.md's "type with it" step. A compiled binary,
+# not a source file.
+/tap

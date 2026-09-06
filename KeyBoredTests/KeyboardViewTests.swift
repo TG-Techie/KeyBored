@@ -162,10 +162,19 @@ private final class Sink: TextDocument {
 
   view.beginHoldForTesting(on: .delete)
   #expect(deletes == 0, "the repeat must wait, or an ordinary tap deletes twice")
-  try await Task.sleep(for: .milliseconds(400))
+
+  // Waits for three deletes rather than for a fixed stretch of time. A fixed 400ms wait
+  // asked how many times a 0.01s timer fires on a loaded machine, and on a machine running
+  // two builds and a simulator the answer was two — a real flake, and a measurement of the
+  // load rather than of the keyboard. The deadline is generous because it is only there so
+  // that a keyboard that does not repeat at all fails instead of hanging.
+  let deadline = Date().addingTimeInterval(5)
+  while deletes < 3, Date() < deadline {
+    try await Task.sleep(for: .milliseconds(10))
+  }
   view.endHoldForTesting()
   let held = deletes
-  #expect(held >= 3, "\(held) deletes in 0.4s of holding a 0.01s repeat")
+  #expect(held >= 3, "\(held) deletes while holding a 0.01s repeat for up to five seconds")
 
   try await Task.sleep(for: .milliseconds(200))
   #expect(deletes == held, "the repeat kept going after the key was released")
@@ -173,12 +182,14 @@ private final class Sink: TextDocument {
 
 /// Renders the latched keyboard so the caps-lock key can be looked at.
 ///
-/// The three shift states have unit tests and the glyphs have one, but neither of those
-/// is a picture. Driving a real tap at the shift key from a script turned out to be
-/// impossible — a System Events click reaches the simulator through the accessibility
-/// layer, and the shift cap draws an image rather than text — so this renders the state
-/// instead. It writes into the simulator's Documents directory beside
-/// `keyboard-populated.png`.
+/// The three shift states have unit tests and the glyphs have one, but neither of those is
+/// a picture, and a picture is what says the latched key does not look like the one-shot
+/// key. It writes into the simulator's Documents directory beside `keyboard-populated.png`.
+///
+/// This used to say that driving a real tap at the shift key from a script was impossible.
+/// It is not — `tools/keys.sh shift shift` latches caps lock on a running keyboard, and
+/// SPEC.md A.9 has the capture. This render is kept anyway: it costs nothing, needs no
+/// simulator in a particular state, and fails in CI where a screenshot cannot.
 @MainActor
 @Test func renderTheLatchedKeyboard() throws {
   let width: CGFloat = 402

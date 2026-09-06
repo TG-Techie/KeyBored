@@ -104,11 +104,30 @@ Add the keyboard once per simulator — it does not appear on its own:
       -array en_US@sw=QWERTY com.tg-techie.app.keybored.keyboard
     xcrun simctl spawn "$D" launchctl stop com.apple.SpringBoard
 
-Then open Safari, focus the address bar, switch to BoreKey with the globe, type, and read
-the field:
+Then open a host with a text field — Contacts' search field or Safari's address bar — and
+focus it. **Switching to BoreKey is the step that wastes the afternoon if you improvise it.**
+Hold the globe in the strip iOS draws below the plate, screenshot the list, measure the
+BoreKey row out of that screenshot, and tap it:
 
+    swiftc -O -o tap tools/tap.swift
+    HOLD=1200 tools/keys.sh globe
+    xcrun simctl io "$D" screenshot list.png
+    ./tap <x> <y>          # the BoreKey row, in the Mac's screen points
+
+The list's rows move: when it carries the three keyboard-size buttons along the bottom,
+every row above them sits higher, and a tap computed from a list captured without that row
+lands on the size buttons and does nothing at all. Then type and read the field:
+
+    tools/keys.sh t h e space c a t
     xcrun simctl ui "$D" appearance dark     # and again with: light
     xcrun simctl io "$D" screenshot shot.png
+
+**Check which keyboard you are looking at before you believe the shot.** These two are now
+close enough that neither the palette, the layout, the bar's rules, nor the globe and
+dictation strip below the plate — which iOS draws for a custom keyboard as well as for its
+own — will tell them apart. What does: the extension's own log line, or a marker drawn in
+the input view for one throwaway build. SPEC.md A.9 has the account of an evening spent
+measuring stock and reporting it as ours.
 
 Compare against a screenshot of the stock keyboard. A build log is not evidence of any of
 this and neither is a passing test.
@@ -287,4 +306,4 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
 - **0.0.3 build 1.** Uploaded at 20:51 EDT from commit `9932d04` with a clean tree, after
   typing "Hi there" into Safari with it on a simulator in both appearances.
 
-The tree is at 0.0.3 build 1, which is spent. Bump before archiving again.
+The tree is at 0.0.4 build 1. Bump before archiving again once that is spent.

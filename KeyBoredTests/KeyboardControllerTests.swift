@@ -299,6 +299,27 @@ private func press(
   #expect(document.text == "THE CAT")
 }
 
+/// The bar under caps lock offers what caps lock would commit.
+///
+/// The left slot's whole claim is "this is what you typed", and tapping any slot replaces
+/// the word in the field with that slot's text. Under caps lock the field had `DEF` and the
+/// bar said `Def`, so the one tap that should have been a no-op rewrote the word — seen on
+/// a simulator, 2026-09-06, and the reason `WordInProgress` carries a `WordCasing` rather
+/// than a flag.
+@MainActor
+@Test func theBarIsUpperCasedUnderCapsLock() {
+  let (controller, document) = typing()
+  press(.shift, controller, at: 10.0)
+  press(.shift, controller, at: 10.1)
+  #expect(controller.shift == .locked)
+  type("cat", into: controller)
+  #expect(document.text == "CAT")
+  #expect(controller.bar.literal == "CAT")
+  for candidate in [controller.bar.primary, controller.bar.secondary].compactMap({ $0 }) {
+    #expect(candidate == candidate.uppercased())
+  }
+}
+
 /// Two taps far enough apart are two taps, not a latch.
 @MainActor
 @Test func twoSlowTapsOnShiftAreNotACapsLock() {

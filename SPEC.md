@@ -1112,6 +1112,77 @@ test that hit-tests each of its four corners rather than its centre. The globe's
 is the one thing here with no artifact behind it: it is wired the way Apple documents and
 has not been seen working.
 
+**All three have since been seen working on a running keyboard.** A.9 says how, and
+supersedes the paragraph above about what could not be tapped: the accessibility layer was
+never the only route, it was only the route that had been tried.
+
+### A.9 — how to drive the real keyboard, and what that turned up
+
+Written 2026-09-06. The section it most changes is A.8, whose account of what a script can
+reach is superseded here rather than edited in place, so the reasoning that produced it
+stays legible.
+
+**A synthetic mouse event reaches every key; an accessibility click does not.** A.8's
+finding — that a System Events `click at` lands only on exposed elements, and at their
+centre — is correct about System Events and wrong as a claim about the simulator. `CGEvent`
+posted to `.cghidEventTap` at a screen point is delivered as a real mouse event, and the
+Simulator turns it into a touch wherever it is aimed: shift, delete, space, the globe, a
+cap's corner, a long press. That is `scratchpad/tap.swift`, and `mtap.sh` and `key.sh`
+wrap it in the device-point coordinates the screenshots are measured in. **A gap named in
+A.8 turned out to be a route that had not been tried, not a route that does not exist.**
+
+**Selecting this keyboard from the globe's long-press list.** The list's rows move: when it
+carries the three keyboard-size buttons along the bottom, every row above them sits higher,
+and a tap computed from a capture taken without that row lands on the size buttons and does
+nothing at all. Screenshot the list, measure the row, then tap. Hours went into the theory
+that the extension was failing to present when the tap had simply missed.
+
+**A retraction, and how it happened.** Between 23:45 and 00:10 on 2026-09-05/06 this
+keyboard was reported here as failing to present, and stock was measured repeatedly as
+though it were ours. Three discriminators were tried and all three were wrong: the
+dictation mic and the globe strip below the plate are drawn by iOS for a custom keyboard
+too, so their presence says nothing; the quoted left bubble is stock's own format, which is
+where ours got it; and the bar's rules land within a pixel of each other. What settled it
+was a red 24×24 square drawn in the input view's corner for one build — an artifact that
+cannot be confused for stock — and the extension's own `os_log` on each key. **Neither
+palette nor layout can tell these two keyboards apart any more, which is the point of the
+work and is also why identifying which one is on screen now needs a marker build or a log
+line rather than a look.**
+
+The measurements below were taken through that route, both keyboards in the same Contacts
+search field, same simulator, same `xcrun simctl io screenshot`, minutes apart.
+
+**Caps lock, seen working.** Two strikes on shift, then `abc`, space, `def`: the field takes
+`ABC DEF` and the shift cap draws the barred `capslock.fill`. The lock survives the space,
+which is what section 3.2 says it should.
+
+**Delete repeat, seen working.** A 1500ms hold on delete emitted 13 delete events and
+emptied a ten-character field. 0.4s to the first repeat and 0.1s after it predicts 12 in
+that window; 13 is that, with the run-loop timer's jitter.
+
+**The number plane, ours against stock, light appearance.** Row 2's ten caps end on exactly
+stock's pixels — 119, 238, 356, 475, 593, 712, 830, 949, 1067, 1186 of 1206 — and every one
+of them *begins* a pixel earlier than stock's: 19 against 20, 137 against 138, 256 against
+257, and so on for all ten. A systematic one-pixel widening on the leading edge, not a
+one-off. Not yet chased to its cause; recorded here so the next reading is a check rather
+than a discovery.
+
+**The light plate is three units off, and this contradicts A.4.** Ours reads `#DFE0E6` and
+stock `#E2E4E8` in this pair, where A.4 recorded stock's light plate as `#DFE0E6` — which
+is the value ours is now set to. One of the two stock readings is wrong, or stock's plate is
+not one colour in every context. **Open.** Nothing was changed on the strength of this;
+A.4's number stands until a third capture breaks the tie.
+
+**Whether stock dims the return key on an empty field is open, and the evidence is
+contradictory.** A.5 recorded that it does not, retracting an earlier note that said it
+does. On 2026-09-06 an empty Contacts search field was captured twice, both on a settled
+screen and minutes apart: once with the magnifier on grey and once with it on `#007AFF`.
+So the grey is real and is not only a frame of the presentation animation, but it is not a
+function of the field being empty either, and nothing here says what it *is* a function of.
+**Do not implement `enablesReturnKeyAutomatically` on the strength of this.** What would
+settle it is a capture of the same field in both states with the difference in the field
+recorded, which is a small experiment nobody has run.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

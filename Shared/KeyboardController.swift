@@ -101,6 +101,19 @@ public enum ShiftState: Sendable, Equatable {
   /// Every letter is capitalized until the shift key is struck again. Auto-shift does
   /// not clear this; only a strike does.
   case locked
+
+  /// How a word begun while the shift stands here is committed.
+  ///
+  /// The bar's left slot shows the text a tap on it would insert, so this mapping is what
+  /// keeps that promise true under caps lock: `DEF` in the field has to be `DEF` in the
+  /// bar, not `Def`. See `WordCasing`.
+  var wordCasing: WordCasing {
+    switch self {
+    case .off: return .lower
+    case .oneShot: return .capitalized
+    case .locked: return .upper
+    }
+  }
 }
 
 /// protocol is the whole of what the routing needs from either, which is what lets the
@@ -245,7 +258,7 @@ public final class KeyboardController {
     case .letter(let letter):
       if plane == .letters {
         guard let neighborhood = predictor.matcher.neighborhood(for: point) else { return }
-        word.append(neighborhood, capitalized: isShifted)
+        word.append(neighborhood, casing: shift.wordCasing)
         document?.insertText(String(cased(neighborhood.literal)))
         // Shift is a one-shot: it applies to the letter that follows it and then
         // releases, which is what the stock keyboard does — except in a field that asked

@@ -55,42 +55,67 @@ public enum Commit: Sendable, Equatable {
 public struct WordInProgress: Sendable {
   public private(set) var neighborhoods: [TapNeighborhood] = []
 
-  /// Whether shift was down for the word's first tap.
+  /// How the shift key was standing for the word's first tap.
   ///
   /// The matcher works in lowercase — "Don't" and "don't" are the same constellation, and
   /// making them different entries would double the lexicon to say nothing. But committing
   /// a correction rewrites what is already in the field, so the casing has to be carried
   /// somewhere or the first word of every sentence quietly loses its capital. Here is that
   /// somewhere: taken from the first tap and applied to whatever is committed.
-  public private(set) var startsCapitalized = false
+  public private(set) var casing: WordCasing = .lower
 
   public init() {}
 
   public var isEmpty: Bool { neighborhoods.isEmpty }
   public var tapCount: Int { neighborhoods.count }
 
-  public mutating func append(_ neighborhood: TapNeighborhood, capitalized: Bool = false) {
-    if neighborhoods.isEmpty { startsCapitalized = capitalized }
+  public mutating func append(_ neighborhood: TapNeighborhood, casing: WordCasing = .lower) {
+    if neighborhoods.isEmpty { self.casing = casing }
     neighborhoods.append(neighborhood)
   }
 
   public mutating func removeLast() {
     if !neighborhoods.isEmpty { neighborhoods.removeLast() }
-    if neighborhoods.isEmpty { startsCapitalized = false }
+    if neighborhoods.isEmpty { casing = .lower }
   }
 
   public mutating func reset() {
     neighborhoods.removeAll()
-    startsCapitalized = false
+    casing = .lower
   }
 
-  /// Applies the word's own casing to text the matcher produced. Only the first letter:
-  /// a correction can be a different length from the taps that produced it ("dont" is
-  /// four taps and "don't" is five characters), so there is no honest per-tap mapping.
+  /// Applies the word's own casing to text the matcher produced.
+  ///
+  /// `.capitalized` touches only the first letter: a correction can be a different length
+  /// from the taps that produced it ("dont" is four taps and "don't" is five characters),
+  /// so there is no honest per-tap mapping. `.upper` has no such problem — every letter
+  /// goes up however many there are.
   public func cased(_ text: String) -> String {
-    guard startsCapitalized, let first = text.first else { return text }
-    return String(first).uppercased() + text.dropFirst()
+    switch casing {
+    case .lower:
+      return text
+    case .capitalized:
+      guard let first = text.first else { return text }
+      return String(first).uppercased() + text.dropFirst()
+    case .upper:
+      return text.uppercased()
+    }
   }
+}
+
+/// How a word is cased when it is committed.
+///
+/// Three cases rather than a `Bool`, because caps lock is a third thing and a boolean
+/// could not say it: with `startsCapitalized` a word typed under caps lock went into the
+/// field as `DEF` and into the bar as `Def`, so tapping the bar's own literal replaced
+/// what had been typed with something else. Measured on a simulator, 2026-09-06.
+public enum WordCasing: Sendable, Equatable {
+  /// Shift was off: the word is committed exactly as the matcher produced it.
+  case lower
+  /// Shift was armed for one tap, or auto-capitalization was: the first letter goes up.
+  case capitalized
+  /// Caps lock was on: every letter goes up.
+  case upper
 }
 
 /// Turns the word in progress into the bar, and decides what a space commits.
