@@ -12,13 +12,15 @@ import Testing
 
 /// Collects what the keyboard would have typed.
 ///
-/// The point of `TextDocument` being a two-method protocol is that this is the whole of
+/// The point of `TextDocument` asking for so little is that this is the whole of
 /// what a test needs to stand in for a host app. Everything below therefore tests the
 /// real routing — the same `KeyboardController` the extension runs — without a keyboard
 /// extension, a host app or a simulator.
 @MainActor
 private final class FakeDocument: TextDocument {
   var text = ""
+
+  var textBeforeInput: String? { text }
 
   func insertText(_ text: String) { self.text.append(text) }
   func deleteBackward() { if !text.isEmpty { text.removeLast() } }
@@ -202,14 +204,31 @@ private func press(_ role: KeyRole, _ controller: KeyboardController) {
 @MainActor
 @Test func deletingBackToNothingClearsTheWordsCapital() {
   // Walking a word back to empty must forget its casing too, or the next word inherits
-  // a capital nobody typed.
+  // a capital nobody typed. Tested from the middle of a sentence, because at the start
+  // of an empty field a capital is exactly what the stock keyboard gives you and the
+  // assertion would not be about the word's own casing any more.
+  let (controller, document) = typing()
+  type("go", into: controller)
+  press(.space, controller)
+  type("dont", into: controller)
+  for _ in 0..<4 { press(.delete, controller) }
+  #expect(document.text == "Go ")
+  type("dont", into: controller)
+  press(.space, controller)
+  #expect(document.text == "Go don't ")
+}
+
+@MainActor
+@Test func deletingBackToAnEmptyFieldRestoresTheCapital() {
+  // The other half of the rule above: emptying the field puts the cursor back at the
+  // start of a sentence, and the stock keyboard capitalizes there.
   let (controller, document) = typing()
   type("dont", into: controller)
   for _ in 0..<4 { press(.delete, controller) }
   #expect(document.text.isEmpty)
   type("dont", into: controller)
   press(.space, controller)
-  #expect(document.text == "don't ")
+  #expect(document.text == "Don't ")
 }
 
 @MainActor

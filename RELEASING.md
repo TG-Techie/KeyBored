@@ -75,6 +75,44 @@ Or supply it per invocation and leave no file behind:
 
 Either works; the file is less to remember if you will archive more than once.
 
+### Before any of it: type with it
+
+**Type a sentence into another app with this build and read the result back. Do it in dark
+appearance and in light.** This is a required step, not a suggestion, and it goes before the
+archive because everything after the archive is expensive to redo.
+
+Two defects reached TestFlight on 2026-09-05 that no build log, no unit test and no
+screenshot of the keyboard by itself could have caught:
+
+- The letter keys rendered blank in dark appearance. `KeyCap.label` inherited `.label`,
+  which is white, on caps that were hard-coded white. Every test passed; the keyboard was
+  legible in the container app, which was light.
+- Typing inserted nothing at all into a host app. `KeyboardController` held its
+  `TextDocument` weakly and both hosts construct their adapter inline, so it was gone the
+  instant `init` returned. Forty tests passed, because every one of them held its fake
+  document in a local for the length of the test — an ownership no real host has.
+
+The recipe, on a booted simulator whose id is in `$D`:
+
+    xcodebuild -scheme KeyBored -destination "platform=iOS Simulator,id=$D" \
+      -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build
+    xcrun simctl install "$D" build/sim/Build/Products/Debug-iphonesimulator/KeyBored.app
+
+Add the keyboard once per simulator — it does not appear on its own:
+
+    xcrun simctl spawn "$D" defaults write .GlobalPreferences AppleKeyboards \
+      -array en_US@sw=QWERTY com.tg-techie.app.keybored.keyboard
+    xcrun simctl spawn "$D" launchctl stop com.apple.SpringBoard
+
+Then open Safari, focus the address bar, switch to BoreKey with the globe, type, and read
+the field:
+
+    xcrun simctl ui "$D" appearance dark     # and again with: light
+    xcrun simctl io "$D" screenshot shot.png
+
+Compare against a screenshot of the stock keyboard. A build log is not evidence of any of
+this and neither is a passing test.
+
 ### The archive
 
     xcodebuild -scheme KeyBored -destination 'generic/platform=iOS' \
@@ -238,5 +276,12 @@ with a version and build pair it has already seen, and it is easier to bump befo
 than to re-cut. `CURRENT_PROJECT_VERSION` is the build number and only has to increase within
 one marketing version, so a new version can start again at 1.
 
-0.0.1 build 1 is spent: it was uploaded on 2026-09-05 and cannot be relabelled. The tree is
-at 0.0.2 build 1, which has not been uploaded.
+Spent, both uploaded on 2026-09-05 and neither relabellable:
+
+- **0.0.1 build 1.** Rejected at upload the first time for missing orientations; the
+  reworked build went up under the same version and build.
+- **0.0.2 build 1.** Uploaded and unusable: blank letter keys in dark appearance, and
+  typing that inserted nothing into a host app. Both are the reason the section above
+  exists.
+
+The tree is at 0.0.3 build 1, which has not been uploaded.

@@ -12,6 +12,11 @@
        looks like success. -->
   <key>ITSAppUsesNonExemptEncryption</key>
   <false/>
+  <!-- Also the brand, from the same single source as CFBundleDisplayName. Some Settings
+       surfaces fall back to CFBundleName, which is why leaving it as the target name
+       showed the old name on a real phone even once the display name was right. -->
+  <key>CFBundleName</key>
+  <string>$(PRODUCT_DISPLAY_NAME)</string>
   <key>UILaunchScreen</key>
   <dict/>
   <key>UIApplicationSceneManifest</key>

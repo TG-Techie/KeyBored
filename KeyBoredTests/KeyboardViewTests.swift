@@ -11,6 +11,7 @@ import UIKit
 @MainActor
 private final class Sink: TextDocument {
   var text = ""
+  var textBeforeInput: String? { text }
   func insertText(_ text: String) { self.text.append(text) }
   func deleteBackward() { if !text.isEmpty { text.removeLast() } }
 }

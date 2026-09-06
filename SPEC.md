@@ -126,15 +126,17 @@ Section 6.3.
 ### 3.2 States and transitions
 
 The system as a whole is a plane, a shift flag, and a word in progress. Everything else is
-derived.
+derived. `A` below is the auto-capitalization of section 3.4 — a fact read out of the field,
+not a remembered one.
 
     (plane, shifted, word)  --letter tap on letters plane-->  (plane, false, word + tap)
     (plane, shifted, word)  --letter tap on other plane-->    (plane, shifted, ∅)   text inserted as struck
-    (plane, shifted, word)  --space / return-->               (plane, shifted, ∅)   commit, then separator
-    (plane, shifted, word)  --delete-->                       (plane, shifted, word − last tap)
+    (plane, shifted, word)  --space / return-->               (plane, A, ∅)         commit, then separator
+    (plane, shifted, word)  --delete-->                       (plane, word−1 empty ? A : shifted, word − last tap)
     (plane, shifted, word)  --shift-->                        (plane, ¬shifted, word)
     (plane, shifted, word)  --plane switch to p-->            (p, shifted, ∅)
-    (plane, shifted, word)  --bubble tap-->                   (plane, shifted, ∅)   chosen text inserted
+    (plane, shifted, word)  --bubble tap-->                   (plane, A, ∅)         chosen text inserted
+    (plane, shifted, word)  --host changed the field-->       (plane, A, ∅ or word)  see 3.4
 
 Two of those are the load-bearing ones.
 
@@ -173,6 +175,35 @@ two runs cannot order equal-scoring candidates differently. *(Invariant I2.)*
 
 **A correction that changes what a bubble said it would.** The bar is cased and rendered
 from the same values the commit inserts. Section 6.
+
+### 3.4 Auto-capitalization is read, never remembered
+
+The shift flag is one bit, and there are two quite different things it can mean: *the user
+pressed shift*, and *the cursor is at the start of a sentence*. Only the first is the
+keyboard's own state. The second is a fact about the field, and the field can change without
+the keyboard touching it.
+
+So at every point where the shift state is the keyboard's to decide — a word boundary, a
+delete back to nothing, a change the host made — it is recomputed by asking the document what
+precedes the insertion point. `TextDocument.textBeforeInput` is that question;
+`UITextDocumentProxy.documentContextBeforeInput` is the answer in the extension. Nothing
+before the cursor, a newline, or a terminator followed by a space, all begin a sentence. A
+terminator with no space after it does not, so `Dr.` mid-sentence stays mid-sentence.
+
+Pressing shift is untouched by any of this. It is the user's, and it is one-shot: it applies
+to the next letter and releases.
+
+**Why it is written down as a rule rather than as a fix.** The flag was initialized `true`
+once at construction and thereafter only ever toggled by the shift key. That is
+indistinguishable from correct behaviour until something outside the keyboard edits the
+field — and then it is silently wrong for the rest of the session. Found on 2026-09-05 by
+clearing Safari's find field with the app's own clear button and typing: `hi there`, where
+the stock keyboard gives `Hi there`.
+
+The host reports its own edits and the keyboard's through the same callback. They are told
+apart by looking rather than by remembering: if the text before the cursor still ends with
+the letters this keyboard believes it typed, the change was its own and the word in progress
+survives. Otherwise the word is discarded, because it no longer describes anything on screen.
 
 ---
 
@@ -523,13 +554,32 @@ Measured behaviour, from the tests rather than from reading the code:
 - The same taps give the same answer across eight fresh matchers. *(I1)*
 - Shift starts on and releases after one letter; delete walks the word back a tap at a
   time; switching to the digits plane ends the word and types literally.
+- Emptying the field from outside the keyboard re-arms the capital, and the keyboard's own
+  insertions do not disturb the word in progress even though the host reports both the same
+  way. Section 3.4.
+- Every key cap and the candidate bar clear a 4.5:1 contrast ratio against the colour behind
+  them, in both `UIUserInterfaceStyle`s.
 - One match against the full 19,217-word lexicon runs in under 20ms on a simulator. *(I11)*
 
-**Three scaffold defects were found by running rather than by reading**, all fixed: the
-test target had no `Info.plist` and could not code sign; neither the app nor the extension
-generated the standard bundle keys, so the app built and could not install; and the
-extension had no `CFBundleDisplayName`, which the installer refuses. A build that succeeds
-is not an app that runs.
+**Five defects were found by running rather than by reading**, all fixed. Three in the
+scaffold: the test target had no `Info.plist` and could not code sign; neither the app nor
+the extension generated the standard bundle keys, so the app built and could not install;
+and the extension had no `CFBundleDisplayName`, which the installer refuses.
+
+Two more got past all of that and reached TestFlight, because a green build and a passing
+suite say nothing about either:
+
+- **The letter keys rendered blank in dark appearance.** `KeyCap.label` inherited `.label`,
+  which is white, on caps hard-coded white. The whole palette is now dynamic, with the dark
+  values sampled from a screenshot of the stock keyboard rather than chosen.
+- **Typing inserted nothing into a host app.** `KeyboardController` held its `TextDocument`
+  weakly and both hosts construct their adapter inline, so it was deallocated the instant
+  `init` returned. Forty tests passed because each held its fake document in a local for the
+  length of the test — an ownership no real host has. `HostIntegrationTests` now builds its
+  document the way a host does.
+
+A build that succeeds is not an app that runs, and an app that runs is not a keyboard that
+types. `RELEASING.md` makes typing with it on a simulator a required step before an upload.
 
 ---
 

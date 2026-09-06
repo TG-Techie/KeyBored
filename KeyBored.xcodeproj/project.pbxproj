@@ -32,6 +32,7 @@
 		787BC0EB5E7F09211D931157 /* KeyboardControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */; };
 		83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
+		87DEF742BBA53BA8982A3747 /* HostIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */; };
 		8B7A7C650AA491E247FD2520 /* KeyBoredKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1F39B60D11993CE399ED4D4F /* KeyBoredKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		956F446154E51532EDBAB730 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 38E2A2652674A439551FCB8B /* Assets.xcassets */; };
 		A458EDBF9019AC8C0695D448 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B700D6F401A5693042A7B118 /* AppIcon.icon */; };
@@ -96,6 +97,7 @@
 		95610C2A24233305E18A020D /* ConstellationMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationMatcher.swift; sourceTree = "<group>"; };
 		9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "12dicts-3esl-lowercase.txt"; sourceTree = "<group>"; };
 		9DBFEC4FFCC1BD393BB0F0B1 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HostIntegrationTests.swift; sourceTree = "<group>"; };
 		A1684CD1434266B7E0D519C3 /* Branding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Branding.swift; sourceTree = "<group>"; };
 		A2288684F8F59D147F102B5C /* KeyBoredApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredApp.swift; sourceTree = "<group>"; };
 		A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersionTests.swift; sourceTree = "<group>"; };
@@ -171,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				1B064B3FB2291087F41E09E7 /* BrandingTests.swift */,
+				9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */,
 				FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */,
 				6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */,
 				A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */,
@@ -333,6 +336,7 @@
 				3A2E003CE408A01E219BB967 /* BrandingTests.swift in Sources */,
 				846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */,
 				4FEE6875BD847E19741BC7B8 /* EnglishLexicon.swift in Sources */,
+				87DEF742BBA53BA8982A3747 /* HostIntegrationTests.swift in Sources */,
 				83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */,
 				27368CB8E85B56E434A338D9 /* KeyBoredVersionTests.swift in Sources */,
 				2F37E2A25B5C49CAAF7F377B /* KeyboardController.swift in Sources */,
@@ -497,7 +501,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.2;
+				MARKETING_VERSION = 0.0.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_DISPLAY_NAME = BoreKey;
@@ -565,7 +569,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.2;
+				MARKETING_VERSION = 0.0.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

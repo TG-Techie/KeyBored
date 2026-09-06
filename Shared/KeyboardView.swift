@@ -79,7 +79,7 @@ final class KeyboardView: UIView {
     }
     if let shift = geometry.keys.first(where: { $0.role == .shift }) {
       (keyViews[shift.id] as? KeyCap)?.label.text = shifted ? "⇧" : "⇧"
-      keyViews[shift.id]?.backgroundColor = shifted ? .white : Self.commandKeyColor
+      keyViews[shift.id]?.backgroundColor = shifted ? Self.letterKeyColor : Self.commandKeyColor
     }
   }
 
@@ -94,8 +94,8 @@ final class KeyboardView: UIView {
       cap.label.text = title(for: key)
       cap.label.font = .systemFont(
         ofSize: key.letter != nil ? 25 : 16, weight: key.letter != nil ? .regular : .regular)
-      cap.backgroundColor = key.letter == nil && key.role != .space
-        ? Self.commandKeyColor : .white
+      cap.label.textColor = Self.keyTextColor
+      cap.backgroundColor = Self.restingColor(for: key)
       addSubview(cap)
       keyViews[key.id] = cap
     }
@@ -135,7 +135,7 @@ final class KeyboardView: UIView {
     for index in 0..<3 {
       let button = UIButton(type: .system)
       button.titleLabel?.font = .systemFont(ofSize: 17)
-      button.setTitleColor(.label, for: .normal)
+      button.setTitleColor(Self.barTextColor, for: .normal)
       button.tag = index
       button.addTarget(self, action: #selector(bubbleTapped(_:)), for: .touchUpInside)
       bubbleButtons.append(button)
@@ -179,7 +179,8 @@ final class KeyboardView: UIView {
   private func setUpPreview() {
     preview.textAlignment = .center
     preview.font = .systemFont(ofSize: 38)
-    preview.backgroundColor = .white
+    preview.textColor = Self.keyTextColor
+    preview.backgroundColor = Self.letterKeyColor
     preview.layer.cornerRadius = 8
     preview.layer.masksToBounds = true
     preview.isHidden = true
@@ -206,8 +207,7 @@ final class KeyboardView: UIView {
     guard let touch = touches.first, let geometry else { return }
     let point = touch.location(in: self)
     guard let key = geometry.hitTest(point) else { return }
-    keyViews[key.id]?.backgroundColor = key.letter == nil && key.role != .space
-      ? Self.commandKeyColor : .white
+    keyViews[key.id]?.backgroundColor = Self.restingColor(for: key)
     // The point is passed on untouched. Rounding it to the key here would throw away
     // the only signal the matcher runs on.
     onKey?(key, point)
@@ -217,16 +217,64 @@ final class KeyboardView: UIView {
     preview.isHidden = true
     guard let geometry else { return }
     for key in geometry.keys {
-      keyViews[key.id]?.backgroundColor = key.letter == nil && key.role != .space
-        ? Self.commandKeyColor : .white
+      keyViews[key.id]?.backgroundColor = Self.restingColor(for: key)
     }
   }
 
-  /// The plate the keys sit on, and the two key states. Sampled from the reference
-  /// screenshot rather than guessed, like the geometry.
-  static let plateColor = UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1)
-  static let commandKeyColor = UIColor(red: 0.67, green: 0.70, blue: 0.74, alpha: 1)
-  static let pressedKeyColor = UIColor(red: 0.85, green: 0.87, blue: 0.89, alpha: 1)
+  // MARK: - The palette
+
+  /// Every colour the keyboard draws with, as dynamic colours, so it follows the system
+  /// appearance the way the stock keyboard does.
+  ///
+  /// Both sets are sampled from screenshots of the stock keyboard rather than guessed,
+  /// like the geometry; see SPEC.md Appendix A. The dark ones were read out of a
+  /// simulator screenshot Jonah supplied on 2026-09-05, averaging a 7×7 box at each
+  /// point: plate `#1E1E1E`, every cap `#434343`, glyphs white.
+  ///
+  /// **In dark mode a command cap is the same grey as a letter cap.** That is not a
+  /// simplification, it is what the stock keyboard does, and it is the opposite of the
+  /// light arrangement where command keys are visibly darker than letter keys. The only
+  /// value here that is chosen rather than measured is the dark pressed state: a static
+  /// screenshot cannot show a key being held, and stock lightens a cap on press in dark
+  /// mode where it darkens one in light mode.
+  ///
+  /// The reason this is a palette at all rather than five literals: it used to be four
+  /// hardcoded light-mode colours and one dynamic text colour, `UILabel`'s default
+  /// `.label`. In dark mode that resolved to white and every letter cap was also white,
+  /// so on a real phone the letters were invisible while `123`, `return` and `⌫` — the
+  /// only caps drawn on the grey command colour — stayed legible. A palette that is
+  /// half fixed and half dynamic cannot be right in both appearances.
+  static let plateColor = dynamic(
+    light: UIColor(red: 0.82, green: 0.84, blue: 0.86, alpha: 1),
+    dark: UIColor(white: 0.122, alpha: 1),
+  )
+  static let letterKeyColor = dynamic(
+    light: .white,
+    dark: UIColor(white: 0.263, alpha: 1),
+  )
+  static let commandKeyColor = dynamic(
+    light: UIColor(red: 0.67, green: 0.70, blue: 0.74, alpha: 1),
+    dark: UIColor(white: 0.263, alpha: 1),
+  )
+  /// The light value is sampled; the dark one is chosen, for the reason above.
+  static let pressedKeyColor = dynamic(
+    light: UIColor(red: 0.85, green: 0.87, blue: 0.89, alpha: 1),
+    dark: UIColor(white: 0.42, alpha: 1),
+  )
+
+  /// The glyph on a cap, and the text in the candidate bar. Explicit rather than
+  /// inherited: an inherited text colour is what made the letters disappear.
+  static let keyTextColor = dynamic(light: .black, dark: .white)
+  static let barTextColor = dynamic(light: .black, dark: .white)
+
+  private static func dynamic(light: UIColor, dark: UIColor) -> UIColor {
+    UIColor { traits in traits.userInterfaceStyle == .dark ? dark : light }
+  }
+
+  /// The background a cap of this key should have when it is not pressed.
+  static func restingColor(for key: Key) -> UIColor {
+    key.letter == nil && key.role != .space ? commandKeyColor : letterKeyColor
+  }
 }
 
 /// One key cap. A view rather than a button so that the touch handling stays in one

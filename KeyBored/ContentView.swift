@@ -96,6 +96,8 @@ private final class TextViewDocument: TextDocument {
     self.textView = textView
   }
 
+  var textBeforeInput: String? { textView.text }
+
   func insertText(_ text: String) {
     textView.text.append(text)
   }

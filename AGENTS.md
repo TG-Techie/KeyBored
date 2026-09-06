@@ -62,10 +62,13 @@ Or pass it per invocation and leave no file behind:
     xcodebuild -scheme KeyBored -destination generic/platform=iOS archive \
       -archivePath build/KeyBored.xcarchive DEVELOPMENT_TEAM=YOURTEAMID
 
-A green build is not evidence the app installs. Three defects got past `BUILD SUCCEEDED`
-during the first prototype — a test target with no `Info.plist`, missing generated bundle
-keys, and an app extension with no `CFBundleDisplayName` — and only running on a simulator
-caught them. Run the tests.
+A green build is not evidence the app installs, and an app that installs is not a keyboard
+that types. Three defects got past `BUILD SUCCEEDED` during the first prototype — a test
+target with no `Info.plist`, missing generated bundle keys, and an app extension with no
+`CFBundleDisplayName`. Two more got past a full passing suite and reached TestFlight: blank
+letter keys in dark appearance, and a keyboard that inserted nothing into a host app. Run
+the tests, and then **type with it on a simulator in both appearances** — `RELEASING.md`
+has the recipe and makes it a required step before any upload.
 
 ## Layout
 
