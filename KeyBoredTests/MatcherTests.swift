@@ -466,3 +466,54 @@ func aOneKeySlipStillCorrectsAndNotOnATie(typed: String, intended: String) {
     #expect(best?.edits == 0, "\(typed) now reaches its word through an edit")
   }
 }
+
+/// **The same corrections, with each tap off centre by a different amount.**
+///
+/// Every other fixture in this file lands each tap on its key's exact centre, and that
+/// shared convenience is a shared blind spot — `SPEC.md` section 8.1 has the last one. It
+/// hid a real defect for the length of one install: the boundary rule was first written to
+/// refuse the whole word when the *single best* candidate carried an edit. Every test here
+/// passed, because at dead centre the best candidate is edit-free for all sixteen fixtures.
+/// Then `hrllo` stopped correcting in the hand at 402pt, and typing it again after the fix
+/// corrected it — the same word, the same field, before and after.
+///
+/// **A uniform offset does not reproduce it and a varying one does.** Nudging every tap by
+/// the same fraction leaves `hello` at the head of the list at every offset that was tried;
+/// real fingers miss each key differently, and it takes that to let an edit-carrying
+/// candidate overtake. So the offsets here are per-tap, derived from the tap's index so
+/// that a failure names the same word every time.
+@Test func aCorrectionSurvivesTapsThatMissEachKeyDifferently() {
+  let matcher = makeMatcher()
+  let predictor = Predictor(matcher: matcher)
+  // `thrre` is deliberately not here. Off centre it commits `three` rather than `there`,
+  // and both are edit-free readings of the same five taps at almost the same cost — an
+  // ambiguity in the lexicon rather than anything this test is about.
+  let cases = [
+    ("hrllo", "hello"), ("helli", "hello"), ("thr", "the"), ("keyboatd", "keyboard"),
+    ("mornibg", "morning"), ("abiut", "about"), ("peopke", "people"),
+    ("becahse", "because"), ("woukd", "would"), ("thsnks", "thanks"),
+    ("reslly", "really"), ("somethibg", "something"), ("olease", "please"),
+    ("tomorrpw", "tomorrow"), ("frienf", "friend"),
+  ]
+  // Five offsets cycled by tap index, all well inside a cap so the literal cannot move.
+  let offsets: [(CGFloat, CGFloat)] = [
+    (0.30, 0.18), (-0.28, -0.20), (0.12, -0.30), (-0.32, 0.22), (0.22, 0.30),
+  ]
+
+  for (typed, intended) in cases {
+    var word = WordInProgress()
+    for (index, character) in typed.enumerated() {
+      let key = matcher.geometry.key(for: character)!
+      let (fx, fy) = offsets[index % offsets.count]
+      word.append(
+        matcher.neighborhood(
+          for: CGPoint(
+            x: key.center.x + key.frame.width * fx,
+            y: key.center.y + key.frame.height * fy))!)
+    }
+    #expect(
+      matcher.literal(for: word.neighborhoods) == typed,
+      "the offsets moved \(typed) onto different keys")
+    #expect(predictor.commit(for: word) == .correction(intended), "\(typed) off centre")
+  }
+}

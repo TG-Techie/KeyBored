@@ -185,9 +185,26 @@ public struct Predictor: Sendable {
     let literal = matcher.literal(for: word.neighborhoods)
     guard !word.isEmpty else { return .literal(literal) }
 
-    guard let best = matcher.candidates(for: word.neighborhoods, limit: 1).first else {
-      return .literal(literal)
-    }
+    // **A correction may re-read a tap. It may not invent one or throw one away.**
+    //
+    // The search reaches a word three ways: matching a tap to a letter at the distance
+    // between them, supposing a letter was never tapped (`omissionPenalty`), or supposing a
+    // tap was a stray (`insertionPenalty`). The first is the constellation method working —
+    // the user aimed at `hello` and one finger landed on `r`. The other two are the matcher
+    // supposing the taps are not what happened, and `Candidate.edits` counts how often it
+    // had to. A boundary only ever commits a reading that accounts for every tap, so the
+    // candidate considered here is the cheapest one with no edits in it.
+    //
+    // **This is a filter and not a veto, and the difference cost a real correction.** The
+    // rule first written here refused to commit when the single best candidate carried an
+    // edit. Every test passed — at dead-centre taps on a 430pt keyboard the best candidate
+    // for all sixteen fixtures happens to be edit-free — and then `hrllo` stopped
+    // correcting in the hand at 402pt, because off-centre taps had let an edit-carrying
+    // candidate overtake `hello` at the top of the list. Taking the best edit-free
+    // candidate rather than giving up on the whole word is the same rule stated correctly.
+    // SPEC.md Appendix A.29.
+    let ranked = matcher.candidates(for: word.neighborhoods)
+    guard let best = ranked.first(where: { $0.edits == 0 }) else { return .literal(literal) }
     if best.text == literal { return .literal(literal) }
 
     // **A word the user actually typed is never replaced.** The rule below asks only
@@ -208,16 +225,9 @@ public struct Predictor: Sendable {
       return .literal(literal)
     }
 
-    // **A correction may re-read a tap. It may not invent one or throw one away.**
+    // **Why the candidate above is the best edit-free one rather than the best one.**
     //
-    // The search can reach a word three ways: matching a tap to a letter at the distance
-    // between them, supposing a letter was never tapped (`omissionPenalty`), or supposing
-    // a tap was a stray (`insertionPenalty`). The first is the constellation method
-    // working — the user aimed at `hello` and one finger landed on `r`. The other two are
-    // the matcher supposing the taps are not what happened, and `Candidate.edits` counts
-    // how often it had to.
-    //
-    // **Measured over the whole probe set at dead-centre taps, that count separates the
+    // **Measured over the whole probe set at dead-centre taps, the edit count separates the
     // wanted corrections from the unwanted ones exactly.** All sixteen one-key-slip
     // fixtures reach their word with zero edits, at a cost of 1.0 — `becahse` → `because`
     // is the one at 1.5, and it is still zero edits, because `h` to `c` is simply two keys
@@ -237,7 +247,6 @@ public struct Predictor: Sendable {
     //
     // What to suggest and when to overwrite stay two decisions. An edit-carrying candidate
     // is still ranked, still shown in the bar, and a tap on it still applies it.
-    if best.edits > 0 { return .literal(literal) }
 
     // **A tie keeps the literal.** The comparison is strict, and that is not a rounding
     // preference — it is the only side of an exact tie the asymmetry permits. A tie means

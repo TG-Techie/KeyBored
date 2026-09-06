@@ -2398,6 +2398,24 @@ was protecting (`jonah`, `isnthere`, `ios`, `hte`, `teh`) never reach the tie co
 more; they are stopped one line earlier and for a different reason. `qwer` → `weer` is the
 one still standing on the tie rule, which is why that rule stays.
 
+**It is a filter and not a veto, and getting that wrong shipped as far as the device.** The
+rule was first written as "if the best candidate carries an edit, keep the literal". Every
+test passed — at dead-centre taps the best candidate is edit-free for all sixteen fixtures —
+and then `hrllo` did not correct in the hand at 402pt in Contacts' search field. Typing the
+same word in the same field after the change corrected it, which is the before-and-after
+that identifies the cause. Real taps miss each key by a different amount, and that lets an
+edit-carrying candidate reach the head of the list while `hello` sits behind it; refusing
+the whole word threw away a reading that was there. `commit` now takes the cheapest
+candidate with no edits in it and puts *that* through the slack comparison.
+
+**A uniform offset does not reproduce it and a varying one does.** Nudging every tap by the
+same fraction of a key leaves `hello` leading at every offset tried, across a 5×5 grid from
+−0.35 to +0.35 of a key in both axes. `aCorrectionSurvivesTapsThatMissEachKeyDifferently`
+therefore cycles five different offsets by tap index. **The dead-centre convention in every
+other fixture in `MatcherTests.swift` is the shared blind spot of section 8.1 all over
+again**, in the same file that carries the note about it, and the thing that caught it was
+typing on the device rather than any test.
+
 **What it did not fix, and cannot.** `keybored` → `keynoted` (2.0), `sry` → `dry` (1.0),
 `np` → `no` and `pw` → `ow` (1.0) are all edit-free substitutions. `sry` → `dry` costs
 exactly what `thr` → `the` costs at exactly the same length, and `np` → `no` costs what any
