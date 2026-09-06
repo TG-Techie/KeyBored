@@ -197,7 +197,18 @@ private final class ProxyDocument: TextDocument {
       autocapitalization: Self.autocapitalization(proxy.autocapitalizationType),
       returnKey: Self.returnKey(proxy.returnKeyType),
       isSecure: proxy.isSecureTextEntry ?? false,
+      smartQuotes: Self.smartQuotes(proxy.smartQuotesType),
     )
+  }
+
+  /// `.no` is the only refusal; `.default` leaves it to the keyboard and `.yes` asks for
+  /// it, and both of those mean the same thing here. SPEC.md Appendix A.10.
+  private static func smartQuotes(_ type: UITextSmartQuotesType?) -> Bool {
+    switch type {
+    case .no?: return false
+    case .yes?, .default?, nil: return true
+    @unknown default: return true
+    }
   }
 
   private static func autocapitalization(

@@ -11,6 +11,7 @@
 		09DC17C4EE08C8F8DC4CDC0B /* 12dicts-3esl-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */; };
 		0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */; };
 		17C497CFD4CD282A3328723F /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
+		17EB8CCFCC165AA5A2DE8914 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
 		1D359295D330C3156CE3F26D /* 12dicts-3esl-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */; };
 		1D52AB0B7EB2884F1E2553B5 /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
 		1E05BBEEF694831A0317DCC1 /* KeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2400830B70778C048C3CBE28 /* KeyboardController.swift */; };
@@ -25,12 +26,14 @@
 		4FEE6875BD847E19741BC7B8 /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
 		55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
 		573F6241BCD4B221DB97E545 /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */; };
+		59C0041A0DED58FE22284969 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
 		5A6C13AA3CFCAC01014F7FE3 /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */; };
 		5B24CDCD9C449C33D6E8CBF2 /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
 		6AC531056FA55E48B6E3FA7E /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */; };
 		6E65F0197ECFBABAC946012F /* EnglishLexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42206740D70CC15F5377706D /* EnglishLexicon.swift */; };
 		7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1684CD1434266B7E0D519C3 /* Branding.swift */; };
 		787BC0EB5E7F09211D931157 /* KeyboardControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */; };
+		7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */; };
 		83414808375CD105F6FF8149 /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
 		846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
 		87DEF742BBA53BA8982A3747 /* HostIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */; };
@@ -94,6 +97,7 @@
 		53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersion.swift; sourceTree = "<group>"; };
 		63D19F82651FDDD5CE4BFE99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewTests.swift; sourceTree = "<group>"; };
+		7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPunctuation.swift; sourceTree = "<group>"; };
 		81222902FB2FAA2B91476168 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockLikenessTests.swift; sourceTree = "<group>"; };
 		95610C2A24233305E18A020D /* ConstellationMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationMatcher.swift; sourceTree = "<group>"; };
@@ -165,6 +169,7 @@
 				B6002EFCE920FB6876D6BEFF /* KeyboardView.swift */,
 				53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */,
 				C10EF1A73D86BB107895805E /* Lexicon.swift */,
+				7F3AA849CA270201D2F8E126 /* SmartPunctuation.swift */,
 				D598C59D6809DCCF660AFAAE /* TypingSession.swift */,
 				2253F6AB2DDCE6105A912454 /* Resources */,
 			);
@@ -349,6 +354,7 @@
 				FCA71C15C96B8311B51AA6BB /* KeyboardViewTests.swift in Sources */,
 				1D52AB0B7EB2884F1E2553B5 /* Lexicon.swift in Sources */,
 				0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */,
+				7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */,
 				071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */,
 				55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */,
 			);
@@ -368,6 +374,7 @@
 				AD18632A574D86BB8E01C6E4 /* KeyboardGeometry.swift in Sources */,
 				5A6C13AA3CFCAC01014F7FE3 /* KeyboardView.swift in Sources */,
 				C10FF9337D6821C1B09EC69D /* Lexicon.swift in Sources */,
+				59C0041A0DED58FE22284969 /* SmartPunctuation.swift in Sources */,
 				E42B041F2DD9210A4CDEE855 /* TypingSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -385,6 +392,7 @@
 				6AC531056FA55E48B6E3FA7E /* KeyboardView.swift in Sources */,
 				F9D288D54267A98822DAA9D2 /* KeyboardViewController.swift in Sources */,
 				C39143B6EFBBC9024B8ED488 /* Lexicon.swift in Sources */,
+				17EB8CCFCC165AA5A2DE8914 /* SmartPunctuation.swift in Sources */,
 				C9E7E76ABE8A98504113C6FE /* TypingSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

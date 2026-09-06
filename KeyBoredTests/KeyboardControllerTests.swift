@@ -190,6 +190,84 @@ private func press(
   #expect(document.text == "hello2")
 }
 
+// MARK: - The quote keys
+
+/// Strikes a key on the plane the controller is currently showing.
+@MainActor
+private func strike(_ character: Character, _ controller: KeyboardController) {
+  let key = controller.geometry.key(for: character)!
+  controller.handle(key, at: key.center)
+}
+
+/// Every row of the table in `SmartPunctuation`, which is every row that was typed with
+/// the stock keyboard and read back off the simulator's pasteboard on 2026-09-06.
+@MainActor
+@Test func theQuoteKeysOpenAndCloseTheWayStockDoes() {
+  let cases: [(before: String, expected: String)] = [
+    ("", "\u{2018}"),
+    ("A ", "\u{2018}"),
+    ("(", "\u{2018}"),
+    ("A", "\u{2019}"),
+    ("5", "\u{2019}"),
+  ]
+  for (before, expected) in cases {
+    let (controller, document) = typing()
+    document.text = before
+    press(.plane(.numbers), controller)
+    strike(SmartPunctuation.apostrophe, controller)
+    #expect(document.text == before + expected, "after \(before.debugDescription)")
+  }
+
+  // The double quote is the same rule on the other pair, including the case that rules a
+  // paired-quote state machine out: stock closes after its own opening quote.
+  let (controller, document) = typing()
+  press(.plane(.numbers), controller)
+  strike(SmartPunctuation.quote, controller)
+  strike(SmartPunctuation.quote, controller)
+  #expect(document.text == "\u{201C}\u{201D}")
+}
+
+@MainActor
+@Test func theQuoteCapsCarryTheCurlyGlyphsStockDraws() {
+  for plane in [Plane.numbers, Plane.symbols] {
+    let geometry = KeyboardGeometry(width: 402, plane: plane)
+    let glyphs = geometry.keys.compactMap(\.letter)
+    #expect(glyphs.contains(SmartPunctuation.apostrophe), "plane \(plane)")
+    #expect(!glyphs.contains("'"), "plane \(plane)")
+    #expect(!glyphs.contains("\""), "plane \(plane)")
+  }
+  #expect(KeyboardGeometry(width: 402, plane: .numbers).key(for: SmartPunctuation.quote) != nil)
+}
+
+/// A field that turns smart quotes off gets the ASCII characters, which is the one place
+/// this keyboard is allowed to differ from what stock draws on the cap.
+@MainActor
+@Test func aFieldThatRefusesSmartQuotesGetsThePlainOnes() {
+  let (controller, document) = typing()
+  document.traits = DocumentTraits(smartQuotes: false)
+  controller.documentDidChange()
+  press(.plane(.numbers), controller)
+  strike(SmartPunctuation.quote, controller)
+  strike(SmartPunctuation.apostrophe, controller)
+  #expect(document.text == "\"'")
+}
+
+/// Measured 2026-09-06: after the apostrophe stock comes back to the letters plane, and
+/// after the double quote, the period and a digit it stays where it is.
+@MainActor
+@Test func onlyTheApostropheHandsTheKeyboardBackToTheLetters() {
+  let (controller, _) = typing()
+  press(.plane(.numbers), controller)
+  strike(SmartPunctuation.quote, controller)
+  #expect(controller.plane == .numbers)
+  strike(".", controller)
+  #expect(controller.plane == .numbers)
+  strike("5", controller)
+  #expect(controller.plane == .numbers)
+  strike(SmartPunctuation.apostrophe, controller)
+  #expect(controller.plane == .letters)
+}
+
 // MARK: - Casing across a commit
 
 @MainActor

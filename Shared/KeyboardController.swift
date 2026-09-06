@@ -66,14 +66,24 @@ public struct DocumentTraits: Sendable, Equatable {
   /// candidate bar would otherwise print the password in the largest type on screen.
   public var isSecure: Bool
 
+  /// Whether the quote keys may insert curly characters.
+  ///
+  /// `UITextInputTraits.smartQuotesType` has three values and only one of them is a
+  /// refusal: `.no` means the field wants the plain ASCII quote, and `.default` and
+  /// `.yes` both leave the keyboard to decide. `SmartPunctuation` explains what is
+  /// decided and what was measured; this is only the field's veto.
+  public var smartQuotes: Bool
+
   public init(
     autocapitalization: Autocapitalization = .sentences,
     returnKey: ReturnKey = .newline,
     isSecure: Bool = false,
+    smartQuotes: Bool = true,
   ) {
     self.autocapitalization = autocapitalization
     self.returnKey = returnKey
     self.isSecure = isSecure
+    self.smartQuotes = smartQuotes
   }
 
   /// What holds when the field says nothing. `.sentences` is UIKit's own documented
@@ -265,11 +275,23 @@ public final class KeyboardController {
         // for `.allCharacters`, where releasing it would fight the field on every key.
         if shift == .oneShot, traits.autocapitalization != .allCharacters { shift = .off }
       } else {
-        // Digits and symbols are inserted as struck and end the word. The constellation
-        // is defined over letters, so a tap on another plane is not a tap the matcher
-        // can score.
+        // Digits and symbols end the word: the constellation is defined over letters, so
+        // a tap on another plane is not a tap the matcher can score, and nothing here is
+        // ever corrected. What goes in is the character as struck, except for the two
+        // quote keys, which stock resolves against the character in front of the cursor
+        // — see `SmartPunctuation`.
         endWord()
-        document?.insertText(String(letter))
+        let previous = document?.textBeforeInput?.last
+        document?.insertText(
+          traits.smartQuotes
+            ? SmartPunctuation.text(for: letter, after: previous)
+            : SmartPunctuation.plain(for: letter))
+        // And the apostrophe, alone among them, hands the keyboard back to the letters
+        // plane, because the tap after an apostrophe is nearly always a letter.
+        if SmartPunctuation.returnsToLetters(after: letter) {
+          plane = .letters
+          rebuildGeometry()
+        }
       }
       refresh()
 

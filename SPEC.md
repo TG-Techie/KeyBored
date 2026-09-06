@@ -1186,6 +1186,57 @@ function of the field being empty either, and nothing here says what it *is* a f
 settle it is a capture of the same field in both states with the difference in the field
 recorded, which is a small experiment nobody has run.
 
+### A.10 — the quote keys, read off the pasteboard rather than off a screenshot
+
+Measured 2026-09-06 on the iPhone 17 Pro simulator, iOS 26.5, dark appearance, in the
+Contacts search field, typing with the **stock** keyboard driven by `tools/keys.sh`.
+
+**The caps carry curly glyphs.** Stock's apostrophe cap is a single slanted wedge and its
+double-quote cap a pair of them; this keyboard drew a straight `'` (U+0027) and `"`
+(U+0022), which is two vertical bars. Plain in `scratchpad/q-stock.png` beside
+`scratchpad/q-ours.png`, both crops of the same cap position, the second from a build
+carrying the red identification marker of A.9 so there is no doubt which keyboard it is.
+
+**The character inserted is not the character on the cap.** Stock picks the opening or the
+closing form from what is in front of the cursor. Every row below was produced by typing
+into an empty field, selecting all, copying, and reading `xcrun simctl pbpaste booted |
+xxd` — **the codepoint comes from the pasteboard, not from a glyph in a screenshot**,
+because `‘` and `’` are a few pixels apart at 3x and I had already read one of them wrong
+by eye that evening. That mistake is A.9's subject and this is the cheap instrument that
+avoids it.
+
+| what was already in the field | key struck | bytes | character |
+| --- | --- | --- | --- |
+| nothing | `'` | `e2 80 98` | U+2018 `‘` |
+| `A` and a space | `'` | `41 20 e2 80 98` | U+2018 `‘` |
+| `(` | `'` | `28 e2 80 98` | U+2018 `‘` |
+| `A` | `'` | `41 e2 80 99` | U+2019 `’` |
+| `5` | `'` | `35 e2 80 99` | U+2019 `’` |
+| nothing, struck twice | `"` `"` | `e2 80 9c e2 80 9d` | U+201C then U+201D |
+
+The last row is the one that decides the shape of the rule. A paired-quote state machine
+would open again after its own `“`; stock closes. So the rule implemented in
+`Shared/SmartPunctuation.swift` is positional and has no state: **opening after nothing,
+after whitespace, or after an opening bracket; closing after everything else.**
+
+**The apostrophe hands the keyboard back to the letters plane, and nothing else on that
+plane does.** Tap the key, screenshot, look at which plane came back: after `'` the letters
+are showing (`scratchpad/rv2c.jpg`); after `"`, after `.`, and after a digit the numbers
+plane is still there (`rv3c.jpg`, `rv1c.jpg`). A sensible asymmetry rather than an
+oversight — an apostrophe is nearly always typed inside a word, so the tap after it is a
+letter.
+
+**Not observed, and left as a divergence rather than guessed at.** What stock does in a
+field that sets `smartQuotesType = .no`: no field on this simulator asks for it, so there
+was nothing to capture. This keyboard inserts the ASCII characters there and keeps the
+curly glyph on the cap, on the reasoning that a field asking for a literal quote wants a
+literal quote and that giving it a curly one would be this keyboard's own bug rather than a
+match with stock. Whether stock also changes the cap is unknown.
+
+**Also not chased:** smart dashes (`--` to an em dash) and smart insert/delete, which are
+the other two halves of the same iOS setting. Neither was measured and neither is
+implemented.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

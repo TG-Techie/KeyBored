@@ -328,18 +328,26 @@ public struct KeyboardGeometry: Sendable {
     self.keys = keys
   }
 
+  /// The glyph on each cap, plane by plane.
+  ///
+  /// The two quote caps carry the curly characters, `”` and `’`, because that is what
+  /// stock draws — its cap is a pair of slanted wedges where a straight `"` is two
+  /// vertical bars, and the difference is plain in a screenshot at 3x. The character on
+  /// the cap is also the character the key is identified by, but it is **not** always the
+  /// character inserted: `SmartPunctuation` picks the opening or the closing form from
+  /// what is in front of the cursor, the way stock does.
   static func glyphRows(for plane: Plane) -> [[Character]] {
     switch plane {
     case .letters:
       return letterRows
     case .numbers:
-      return [Array("1234567890"), Array("-/:;()$&@\""), Array(".,?!'")]
+      return [Array("1234567890"), Array("-/:;()$&@”"), Array(".,?!’")]
     // The bullet closing the symbol plane's second row is easy to miss and stock has it;
     // without it the row is nine keys and lands half a column pitch in from the row above,
     // which is the letters plane's arrangement in the wrong place. Both second rows were
     // read off stock captures on 2026-09-05 and both are ten keys wide.
     case .symbols:
-      return [Array("[]{}#%^*+="), Array("_\\|~<>€£¥•"), Array(".,?!'")]
+      return [Array("[]{}#%^*+="), Array("_\\|~<>€£¥•"), Array(".,?!’")]
     }
   }
 
