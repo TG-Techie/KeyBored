@@ -37,7 +37,11 @@ private func typing(_ traits: DocumentTraits) -> (KeyboardController, DeclaringD
 private func type(_ characters: String, on controller: KeyboardController) {
   for character in characters {
     if character == " " {
-      controller.handle(controller.geometry.keys.first { $0.role == .space }!, at: .zero)
+      // At the space bar's own centre, not at the origin. The point used to be ignored
+      // for a space and is now what decides the tap means one, so a helper that struck it
+      // at (0, 0) would be asserting the behaviour of a tap in the top-left corner.
+      let space = controller.geometry.keys.first { $0.role == .space }!
+      controller.handle(space, at: space.center)
     } else {
       let key = controller.geometry.key(for: character)!
       controller.handle(key, at: key.center)

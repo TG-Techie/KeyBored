@@ -109,18 +109,25 @@ public struct ConstellationMatcher: Sendable {
 
   // MARK: - Neighbourhoods
 
-  /// The 3x3 block of letter keys around the tap, clamped to the keys that exist.
+  /// The 3x3 block of scored keys around the tap, clamped to the keys that exist.
   ///
   /// There is no row above `q` and no column left of `a`. The block is defined over
   /// the grid and then intersected with the keyboard, so an edge tap simply has fewer
   /// neighbours rather than a special case.
+  ///
+  /// **The space bar is in the block and used not to be.** The pool was `letterKeys`, so
+  /// a tap on a letter could never be scored as a space and a tap on the space bar was
+  /// not scored at all — this returned `nil` for it. Widening the pool to `scoredKeys` is
+  /// the whole change: the row walk already picks up the bottom row for a tap in row 2
+  /// and row 2 for a tap on the space bar, because it finds the block by position rather
+  /// than by arithmetic on indices. SPEC.md A.20.
   public func neighborhood(for point: CGPoint) -> TapNeighborhood? {
-    guard let hit = geometry.hitTest(point), hit.letter != nil else { return nil }
+    guard let hit = geometry.hitTest(point), hit.scoredCharacter != nil else { return nil }
 
     var found: [(Character, Double)] = []
     for rowOffset in -Tuning.neighborhoodRows...Tuning.neighborhoodRows {
       let row = hit.id.row + rowOffset
-      let rowKeys = geometry.letterKeys.filter { $0.id.row == row }.sorted {
+      let rowKeys = geometry.scoredKeys.filter { $0.id.row == row }.sorted {
         $0.frame.minX < $1.frame.minX
       }
       guard !rowKeys.isEmpty else { continue }
@@ -138,7 +145,7 @@ public struct ConstellationMatcher: Sendable {
         let index = nearest + columnOffset
         guard index >= 0, index < rowKeys.count else { continue }
         let key = rowKeys[index]
-        found.append((key.letter!, geometry.normalizedManhattan(from: point, to: key)))
+        found.append((key.scoredCharacter!, geometry.normalizedManhattan(from: point, to: key)))
       }
     }
 

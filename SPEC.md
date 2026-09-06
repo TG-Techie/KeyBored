@@ -1792,9 +1792,110 @@ could be improved; the shape it replaced could not be, because it was the wrong 
 
 **Not verified.** The preview at 402pt, and the preview in light appearance.
 
+### A.20 — the space bar was not a point in any constellation, and could not have been
+
+Jonah, 2026-09-06 10:35, relayed by crisp-kelp: "tapping near the space bar should also be
+accounted as potentially tapping space where the whole canvas is tap zones where only on
+beeline and no character entering keys are not in the constellation matching". Read as: the
+partition is between keys that enter a character and keys that do not, and only the second
+kind are outside the matching. The space bar enters a character and was outside it.
+
+**Two gaps, and they were asymmetric.** A tap on a letter could never be scored as a space,
+because `neighborhood(for:)` drew its candidates from `letterKeys`. And a tap on the space
+bar was not scored at all: the same function opened by requiring `hit.letter != nil` and
+returned `nil`, so a finger that landed on the space bar had no constellation and the word
+was committed on the strength of which cap was struck. A `b` struck slightly low ended the
+word and could not be recovered.
+
+**Adding space to the candidate set would have done nothing, and this is why.** The cost
+function divided every horizontal distance by one `columnPitch`, the letter grid's
+centre-to-centre spacing. The space bar at 430pt is 615px wide against a letter's 109, so
+its centre is a long way from a tap near either end of it. A tap 13px inside the space
+bar's own left edge — x 350, y 2488 — scored
+
+    to space   |350 - 644| / 127  +  0            =  2.32
+    to `x`     |350 - 391| / 127  +  168 / 168    =  1.32
+
+**Space lost inside itself**, and it lost to a key one row up. Every tap on the outer
+thirds of the space bar was nearer, by the only measure the matcher has, to a letter.
+
+**The normalizer belongs to the key, not to the grid.** `normalizedManhattan` now divides
+by `key.frame.width + columnGap` rather than by a single pitch. For a key of the standard
+letter width that sum *is* the old `columnPitch`, so:
+
+- every letter-to-letter score is unchanged, and every tuning constant in section 5 keeps
+  the meaning it was fitted with;
+- only keys that are not letter-width behave differently, and until the space bar joined
+  the pool there were none in it.
+
+The same tap now scores 0.465 to space against 1.32 to `x`, and the boundary between the
+two lands where the caps do: a tap on the top edge of the space bar directly under `b`
+scores 0.865 to space and 0.918 to `b`, and a tap on `b`'s bottom edge scores 0.396 to `b`
+and 1.005 to space.
+
+**The identity is one ULP, and the ULP is a finding rather than slack in the test.** The
+bottom letter row is not built from `keyWidth`; it is built from
+`(7 * keyWidth + 6 * gap - 6 * gap) / 7`, the same number by algebra and one unit in the
+last place away from it in binary. So `z` through `m` move by about four parts in 10^16 and
+the other nineteen letters do not move at all. `SpaceInTheConstellationTests` asserts both
+the score identity and the width identity at that tolerance, and says why.
+
+**The cap stopped deciding what a tap means.** `KeyboardController.handle(_:at:)` used to
+switch on the key's role and treat `.space` as its own action. It now resolves any scored
+key on the letters plane through one neighbourhood and acts on what the tap was nearest to:
+a tap on the space bar nearer a letter types the letter, and a tap on a letter nearer the
+space bar commits the word and inserts a space. The role is still consulted for the two
+things it is the authority on — whether the matcher scores this key at all, and what a
+command key does.
+
+**A shared test helper had been asserting the wrong thing for as long as it existed.** Both
+integration suites typed a space with `controller.handle(spaceKey, at: .zero)`, because the
+point was ignored for a space and the origin was convenient. Once the point decides, that
+helper strikes the top-left corner of the keyboard. Four tests failed and they were right
+to; the helper now strikes the space bar's own centre. This is the third instance of the
+pattern section 8.1 already records: a convenience shared by every fixture in a group
+deletes the state nothing is testing.
+
+**Two properties of stock checked while in this code, both already correct.** From US
+8,232,973 B2 (Kocienda and others, priority 2008-01-09), which is the specification of the
+thing this project reimplements:
+
+- *Selection commits at lift-off, not at touch-down.* `KeyboardView.touchesEnded` resolves
+  the target at the lift point and calls `onKey` there; `touchesBegan` only draws. So
+  sliding a finger before lifting changes the character, as it does on stock, and the key
+  preview is live feedback rather than a receipt.
+- *The space bar accepts the top suggestion and tapping the displayed candidate rejects
+  it.* A space runs `commitWord()`, which applies the correction; the left bubble is the
+  literal, and tapping it inserts what was actually typed. Getting this inverted is the
+  likeliest single way a custom keyboard feels wrong, and it is not inverted here.
+
+**What this does not do, and the fixture that names it.** A tap on a letter can now resolve
+*to* a space, but a candidate *word* still cannot contain one: `Lexicon` is a trie over
+single entries and no entry has a space in it. So `isnthere` cannot become `is there`.
+That is Jonah's own example, 2026-09-06 10:36 — "Isnthere should probably correct to is
+there, as a contrived no actual test example", where he began to call it contrived and
+corrected himself, so it is a real transcript from his phone rather than an invented case.
+It is the right fixture for the next stage because `isnthere` is not a word: the literal is
+wrong and every single-word candidate is also wrong, so a keyboard that only ever offers
+single-word candidates has no way to be right. That is the argument for putting the word
+boundary inside the search rather than settling it before, and it is his example rather
+than our reasoning.
+
+**One key deliberately left out.** `.punctuation` — stock's address-field period — enters a
+character and by the rule above should be scored. It is not, for now, because its position
+is not a point in any word's constellation and no lexicon entry contains a period, so
+scoring it would only let a tap near it be read as one. A.14 has the original reasoning.
+Recorded as a decision rather than an omission, and open to being overturned.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.
+- US 8,232,973 B2, "Method, device, and graphical user interface providing word
+  recommendations for text input", Kocienda and others, priority 2008-01-09 — the
+  specification of the keyboard this project reimplements. Cited in A.20 for two
+  properties: selection commits at lift-off rather than touch-down, and the enlarged
+  character is shown before lift-off. **Read secondhand**, through a survey rather than
+  from the patent text, and marked as such in "What is not verified".
 - Apple, App Extension Programming Guide, "Custom Keyboard":
   <https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/CustomKeyboard.html>
   — the Full Access facts in section 10 and the `UILexicon` fact in section 7.
@@ -1814,4 +1915,10 @@ could be improved; the shape it replaced could not be, because it was the wrong 
 - **The point values in Appendix A come from a screenshot**, not from a running keyboard.
 - **The prior-art framing in section 5.4 is second-hand**, from a survey of search summaries
   rather than of full papers.
+- **The patent cited in Appendix B was not read**, and neither was *Creative Selection*.
+  Both reached this document through an agent's survey of third-party sources. The two
+  properties A.20 takes from the patent were each checked against this keyboard's own code
+  and found to hold, so nothing here depends on the citation being right — but the citation
+  itself is unverified, and one search result in the same survey was found to have attached
+  the same language to a different patent number.
 - **Latency was measured on a simulator**, not on a device.

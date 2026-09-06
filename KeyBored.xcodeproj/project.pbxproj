@@ -49,6 +49,7 @@
 		C017F879F4446DD46E986AE7 /* 12dicts-2of12inf-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7D73742EAD635BF179EE9550 /* 12dicts-2of12inf-lowercase.txt */; };
 		C10FF9337D6821C1B09EC69D /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
 		C39143B6EFBBC9024B8ED488 /* Lexicon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10EF1A73D86BB107895805E /* Lexicon.swift */; };
+		C485C870745CB4C11D4FDEA0 /* SpaceInTheConstellationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23A24DE2A8422D6BC208704D /* SpaceInTheConstellationTests.swift */; };
 		C9BB728007BFE774803ACFCD /* PreviewGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B511A91A36ABD0661925F05 /* PreviewGeometryTests.swift */; };
 		C9E7E76ABE8A98504113C6FE /* TypingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D598C59D6809DCCF660AFAAE /* TypingSession.swift */; };
 		DBFF1BE423AFF63D6DB50C95 /* ConstellationMatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95610C2A24233305E18A020D /* ConstellationMatcher.swift */; };
@@ -95,6 +96,7 @@
 		13593DD3399D48D8AC7170D5 /* KeyboardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
 		1B064B3FB2291087F41E09E7 /* BrandingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandingTests.swift; sourceTree = "<group>"; };
 		1F39B60D11993CE399ED4D4F /* KeyBoredKeyboard.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = KeyBoredKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		23A24DE2A8422D6BC208704D /* SpaceInTheConstellationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceInTheConstellationTests.swift; sourceTree = "<group>"; };
 		2400830B70778C048C3CBE28 /* KeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardController.swift; sourceTree = "<group>"; };
 		29162360F13E2B650EB8AD47 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		38E2A2652674A439551FCB8B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -196,6 +198,7 @@
 				A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */,
 				E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */,
 				7B511A91A36ABD0661925F05 /* PreviewGeometryTests.swift */,
+				23A24DE2A8422D6BC208704D /* SpaceInTheConstellationTests.swift */,
 				92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */,
 			);
 			path = KeyBoredTests;
@@ -369,6 +372,7 @@
 				0EABA5E23BFF0BFEBF9F129D /* MemoryBudget.swift in Sources */,
 				C9BB728007BFE774803ACFCD /* PreviewGeometryTests.swift in Sources */,
 				7B97EF555AACD19FB83A4F28 /* SmartPunctuation.swift in Sources */,
+				C485C870745CB4C11D4FDEA0 /* SpaceInTheConstellationTests.swift in Sources */,
 				071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */,
 				55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */,
 			);

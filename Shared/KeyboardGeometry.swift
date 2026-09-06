@@ -74,6 +74,27 @@ public struct Key: Sendable {
     default: return nil
     }
   }
+
+  /// The character this key contributes to a word's constellation, or `nil` for a key the
+  /// matcher does not score.
+  ///
+  /// **The space bar is one of these and was not.** Jonah, 2026-09-06 10:35: "tapping
+  /// near the space bar should also be accounted as potentially tapping space where the
+  /// whole canvas is tap zones where only ... no character entering keys are not in the
+  /// constellation matching". So the partition is between keys that enter a character and
+  /// keys that do not, and it is stated here once rather than being implied by
+  /// `letter != nil` at each call site.
+  ///
+  /// `.punctuation` stays out for now and that is a deliberate exception rather than an
+  /// oversight: the host-provided period key is not a point in any word's constellation,
+  /// and no entry in the lexicon contains one. SPEC.md A.14 and A.20.
+  public var scoredCharacter: Character? {
+    switch role {
+    case .letter(let c): return c
+    case .space: return " "
+    default: return nil
+    }
+  }
 }
 
 /// The measured stock proportions, kept in one place and named, so that the numbers
@@ -421,10 +442,11 @@ public struct KeyboardGeometry: Sendable {
   public let hasPeriodKey: Bool
   public let keys: [Key]
 
-  /// Centre-to-centre spacing, the unit distances are normalized by. Scores expressed
-  /// in these units mean the same thing on every screen size, so a threshold tuned on
-  /// one device holds on the next.
-  public let columnPitch: CGFloat
+  /// What separates two caps in a row, and what separates two rows. Distances are
+  /// normalized by these so that a score computed on one device means the same as a
+  /// threshold tuned on another. The horizontal unit is not stored as a pitch because
+  /// there is no single one: see `normalizedManhattan(from:to:)`.
+  public let columnGap: CGFloat
   public let rowPitch: CGFloat
 
   /// The letter rows, in order, as the letters they produce unshifted.
@@ -455,7 +477,7 @@ public struct KeyboardGeometry: Sendable {
     // row land exactly on both margins instead of a pixel short.
     let keyWidth = (width - 2 * margin - 9 * gap) / 10
 
-    self.columnPitch = keyWidth + gap
+    self.columnGap = gap
     self.rowPitch = StockMetrics.rowHeight(forWidth: width) + StockMetrics.rowGap
 
     var keys: [Key] = []
@@ -633,16 +655,33 @@ public struct KeyboardGeometry: Sendable {
   }
 
   /// Manhattan distance in normalized key units: the metric the whole matcher runs on.
-  /// Normalizing by pitch is what lets a score computed on one device be compared with
-  /// a threshold tuned on another.
+  ///
+  /// **The horizontal unit belongs to the key being measured to, not to the grid.** It
+  /// used to be one `columnPitch` for every key, which is right while every key is the
+  /// same width and silently wrong the moment one is not. The space bar is 615px against
+  /// a letter's 109 at 430pt, so its centre sits far from taps that are inside it: a tap
+  /// 13px in from the space bar's own left edge scored 2.32 to space and 1.32 to `x`, one
+  /// row up. **Space lost inside itself**, which is why simply adding it to the candidate
+  /// set would have looked as though it did nothing.
+  ///
+  /// Dividing by `key.frame.width + columnGap` is identity for a key of the standard
+  /// letter width, because that sum is exactly the old `columnPitch`. So every
+  /// letter-to-letter score is unchanged to the bit, every tuning constant in SPEC
+  /// section 5 keeps the meaning it was fitted with, and only keys that are not
+  /// letter-width behave differently. `MatcherTests` asserts that identity rather than
+  /// leaving it as an argument. SPEC.md A.20.
   public func normalizedManhattan(from point: CGPoint, to key: Key) -> Double {
-    let dx = abs(point.x - key.center.x) / columnPitch
+    let dx = abs(point.x - key.center.x) / (key.frame.width + columnGap)
     let dy = abs(point.y - key.center.y) / rowPitch
     return Double(dx + dy)
   }
 
   /// Every letter key on this geometry, in row-major order.
   public var letterKeys: [Key] { keys.filter { $0.letter != nil } }
+
+  /// Every key whose position is a point in a word's constellation: the letters and the
+  /// space bar. See `Key.scoredCharacter`.
+  public var scoredKeys: [Key] { keys.filter { $0.scoredCharacter != nil } }
 
   public func key(for character: Character) -> Key? {
     keys.first { $0.letter == character }

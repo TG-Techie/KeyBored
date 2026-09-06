@@ -306,45 +306,46 @@ public final class KeyboardController {
 
   /// What a strike on `key` at `point` does.
   ///
-  /// The point matters and the key does not, for letters: the key is only consulted to
-  /// tell a letter from a command. Rounding the point to its key here would discard the
-  /// only signal the matcher runs on.
+  /// **On the letters plane the point decides and the cap does not.** Every key the
+  /// matcher scores — the letters and the space bar — goes through one neighbourhood, and
+  /// what the tap *means* is the nearest scored character to where the finger landed, not
+  /// the cap it landed on. So a tap on the space bar that is nearer a letter types the
+  /// letter, and a tap low on a letter that is nearer the space bar ends the word. That
+  /// is Jonah's rule of 2026-09-06 10:35 and it is the constellation method applied to
+  /// the key it had been leaving out. SPEC.md A.20.
+  ///
+  /// The cap is still consulted, for two things it is the authority on: whether this is a
+  /// key the matcher scores at all, and what a command key does. Rounding the point to
+  /// its key would discard the only signal the matcher runs on.
   public func handle(
     _ key: Key, at point: CGPoint,
     at time: TimeInterval = ProcessInfo.processInfo.systemUptime,
   ) {
+    if plane == .letters, key.scoredCharacter != nil {
+      guard let neighborhood = predictor.matcher.neighborhood(for: point) else { return }
+      strike(neighborhood)
+      return
+    }
+
     switch key.role {
     case .letter(let letter):
-      if plane == .letters {
-        guard let neighborhood = predictor.matcher.neighborhood(for: point) else { return }
-        // Whether this tap starts a word, or continues one that was already in the field,
-        // is decided once — here, before the character goes in, while the character in
-        // front of the cursor is still the one that was there.
-        let anchored = word.isEmpty ? !Self.continuesAWord(document?.textBeforeInput?.last) : true
-        word.append(neighborhood, casing: shift.wordCasing, anchored: anchored)
-        insert(String(cased(neighborhood.literal)))
-        // Shift is a one-shot: it applies to the letter that follows it and then
-        // releases, which is what the stock keyboard does — except in a field that asked
-        // for `.allCharacters`, where releasing it would fight the field on every key.
-        if shift == .oneShot, traits.autocapitalization != .allCharacters { shift = .off }
-      } else {
-        // Digits and symbols end the word: the constellation is defined over letters, so
-        // a tap on another plane is not a tap the matcher can score, and nothing here is
-        // ever corrected. What goes in is the character as struck, except for the two
-        // quote keys, which stock resolves against the character in front of the cursor
-        // — see `SmartPunctuation`.
-        endWord()
-        let previous = document?.textBeforeInput?.last
-        insert(
-          traits.smartQuotes
-            ? SmartPunctuation.text(for: letter, after: previous)
-            : SmartPunctuation.plain(for: letter))
-        // And the apostrophe, alone among them, hands the keyboard back to the letters
-        // plane, because the tap after an apostrophe is nearly always a letter.
-        if SmartPunctuation.returnsToLetters(after: letter) {
-          plane = .letters
-          rebuildGeometry()
-        }
+      // Only reached off the letters plane, because the letters plane is resolved above.
+      // Digits and symbols end the word: the constellation is defined over the letters
+      // and the space bar, so a tap on another plane is not a tap the matcher can score,
+      // and nothing here is ever corrected. What goes in is the character as struck,
+      // except for the two quote keys, which stock resolves against the character in
+      // front of the cursor — see `SmartPunctuation`.
+      endWord()
+      let previous = document?.textBeforeInput?.last
+      insert(
+        traits.smartQuotes
+          ? SmartPunctuation.text(for: letter, after: previous)
+          : SmartPunctuation.plain(for: letter))
+      // And the apostrophe, alone among them, hands the keyboard back to the letters
+      // plane, because the tap after an apostrophe is nearly always a letter.
+      if SmartPunctuation.returnsToLetters(after: letter) {
+        plane = .letters
+        rebuildGeometry()
       }
       refresh()
 
@@ -359,10 +360,10 @@ public final class KeyboardController {
       refresh()
 
     case .space:
-      commitWord()
-      insert(" ")
-      updateAutoShift()
-      refresh()
+      // Only reached off the letters plane, where the space bar is a cap like any other
+      // and there is no constellation for it to be a point in. On the letters plane a
+      // space is what a tap *resolved to*, and `strike(_:)` is where that happens.
+      commitWordWithSpace()
 
     case .newline:
       commitWord()
@@ -414,6 +415,40 @@ public final class KeyboardController {
     for _ in 0..<word.tapCount { document?.deleteBackward() }
     insert(text)
     endWord()
+    updateAutoShift()
+    refresh()
+  }
+
+  /// What a tap on the letters plane means, once the matcher has said which character it
+  /// was nearest.
+  ///
+  /// The space is not a special case here so much as the case that ends the word: it is
+  /// the one scored character that is not part of any word, so resolving to it is what
+  /// says the word before it is finished and may be corrected.
+  private func strike(_ neighborhood: TapNeighborhood) {
+    guard neighborhood.literal != " " else {
+      commitWordWithSpace()
+      return
+    }
+    // Whether this tap starts a word, or continues one that was already in the field, is
+    // decided once — here, before the character goes in, while the character in front of
+    // the cursor is still the one that was there.
+    let anchored = word.isEmpty ? !Self.continuesAWord(document?.textBeforeInput?.last) : true
+    word.append(neighborhood, casing: shift.wordCasing, anchored: anchored)
+    insert(String(cased(neighborhood.literal)))
+    // Shift is a one-shot: it applies to the letter that follows it and then releases,
+    // which is what the stock keyboard does — except in a field that asked for
+    // `.allCharacters`, where releasing it would fight the field on every key.
+    if shift == .oneShot, traits.autocapitalization != .allCharacters { shift = .off }
+    refresh()
+  }
+
+  /// A space: the word in front of it is committed, corrected if the matcher has a better
+  /// reading of it, and then the space goes in. Stock accepts its top suggestion on the
+  /// space bar in the same way.
+  private func commitWordWithSpace() {
+    commitWord()
+    insert(" ")
     updateAutoShift()
     refresh()
   }
