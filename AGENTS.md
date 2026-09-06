@@ -109,6 +109,30 @@ which merely mentions the trailer — this file's own commit does — is not a h
 
     git log --format='%B' | grep -nE '^Claude-Session:|^https://claude\.ai/code/session'
 
+## Changes to the keyboard are architectural, never patches
+
+Every change to the keyboard is made so that the finished code reads as though it had been
+written correctly from the beginning. Not "tidily": the test is whether the defect is still
+*expressible* afterwards. Adding a second check beside the first one, so that the two now
+agree, leaves the disagreement possible and is the thing this rule forbids; the fix is to
+arrange the code so that only one of them exists.
+
+The change that produced the rule is the worked example. Taps landing in the 6pt gaps
+between key caps did nothing at all — no character, no key preview, no highlight — because
+UIKit was choosing which view heard about a touch before any of this project's own
+resolution ran. Three symptoms, three places they could have been patched, one cause. What
+went in instead was a single touch layer: `KeyboardView.hitTest(_:with:)` claims every
+point in its bounds so nothing else can take one, `target(at:)` is the only code allowed to
+turn a coordinate into a meaning, and the insertion, the preview and the highlight are all
+driven from that one answer. After it, a tap that resolves to a key and draws no preview is
+not a bug that happens to be fixed — it is a state the code cannot express.
+
+Granted by Jonah, pbm, 2026-09-06. His words, verbatim: "Do so Systematically and
+holistically; this needs to be an architectural, coherent change such that the keyboard
+appears to have been written correctly from the beginning, never patched  /  Approach all
+changes to the keyboard like that  /  PBM A". Recorded by hazy-zephyr, 2026-09-06; the
+wording of the paragraphs above is mine, not his, except where quoted.
+
 ## Coding conventions
 
 - Idiomatic Swift 6, with `SWIFT_STRICT_CONCURRENCY: complete`.
