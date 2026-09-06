@@ -2164,6 +2164,56 @@ long-press alternates exist in this keyboard at all.
 device, and neither is guessed at here.
 
 
+### A.25 — pressed states, and the long presses this keyboard does not have
+
+The last item of the differential. Measured on an iPhone 17 Pro simulator at 402pt in
+Safari's address field, both appearances, sampling an off-glyph pixel inside each cap while
+the finger was down.
+
+**The pressed fill matches.** Stock lightens a held cap rather than darkening it, in both
+appearances, and so does this keyboard:
+
+| | resting | held |
+|---|---|---|
+| stock, dark | `#404041` | `#7F7F80` |
+| ours, dark | `#3F3F40` | `#7D7D7D` |
+| stock, light | `#FFFFFF` | `#C4C5C8` |
+| ours, light | `#FFFFFF` | `#C5C5C9` |
+
+One unit apart at rest and at most three held. The plate in light appearance is `#E2E4E8`
+against ours at `#E1E3E7`, also one unit. The 2026-09-05 record had these three to five
+units apart; they are not any more. Sampled on shift, delete and the space bar, which are
+the keys that show a pressed cap at all — a letter draws its preview instead.
+
+**Three behavioural differences, none of them a fill.**
+
+1. **A long press on the space bar turns stock's keyboard into a trackpad.** Every glyph
+   fades out, the return key disappears, and the caps become a blank surface for moving the
+   caret. It fires at about half a second. This keyboard has nothing of the kind, and the
+   space bar simply stays held.
+
+2. **A long press on a letter opens stock's accent row** — held `g` for three seconds and
+   got `g ğ ġ` on a raised strip with the held key filled blue. **There are no long-press
+   alternates anywhere in this keyboard.** That is a missing feature rather than a defect,
+   and it belongs beside the emoji key rather than beside the preview work: the preview is
+   what stock shows *before* the threshold, and this is a different mechanism that replaces
+   it after.
+
+3. **Stock's plane key acts on touch-down; every key here acts on lift.** A capture 280ms
+   into a press on `123` already read `ABC` — the plane had switched with the finger still
+   down. `KeyboardView.touchesBegan` only records the target and draws the press; everything
+   that acts is in `touchesEnded`. For a letter that is correct and deliberate — A.20 records
+   commit-at-lift-off as one of the two patent properties this keyboard already had — but
+   the plane key is not a letter and nothing about the constellation requires it to wait.
+
+**Both long presses were found by measuring the wrong thing first.** A two-second hold on
+the space bar produced a keyboard with no glyphs and no return key, which read as a screen
+captured mid-animation; the whole plate had changed, so the first reading was that the
+instrument had caught a transition. It had caught the trackpad. The fix to the method is in
+`press402.sh`: hold for one second and capture at 280ms, because **iOS's own long-press
+gestures fire at about half a second and a longer hold measures those instead of the cap.**
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.
