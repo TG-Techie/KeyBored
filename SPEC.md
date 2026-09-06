@@ -1500,6 +1500,30 @@ is the corner: stock's cap stops narrowing about 20px below its top edge and thi
 at about 16, on a radius drawn at 21. That is a sub-point difference at 3x measured through
 a brightness threshold, and it is recorded rather than acted on.
 
+### A.15 — the flickering suggestion was the keyboard's own key preview
+
+Reported 2026-09-05 as "the suggested word keeps flickering or fading in and out", and
+still there in the 0.0.3 build he was looking at on 2026-09-06. It is not the bar being
+recomputed and it is not an animation. It is one line in `touchesBegan`.
+
+A top-row key's preview wants to be at a negative `y`, and a custom keyboard's input view is
+clipped by its host, so the preview is clamped down into the candidate bar — the fix for the
+other thing he reported the same evening, "popup being cutoff". The clamped preview overlaps
+one third of the bar, and `hideBarSlot(under:)` hid whichever suggestion it covered, on the
+reasoning that a half-covered word looks broken. Restored on release. So every letter struck
+in the top row blanked a third of the bar for as long as the finger was down.
+
+The hiding is gone. The preview is opaque and drawn in front, so it covers the part of a
+word it sits on and leaves the rest legible, which is what a key floating over a bar looks
+like.
+
+Verified on the simulator 2026-09-06, BoreKey confirmed current from the globe list, with
+the press held by a script so the capture lands mid-press: with `hel` typed and the bar
+reading `"hel" | gel`, a held `y` — whose preview sits squarely over the middle third —
+leaves `hell` legible either side of the cap instead of blanking it (`fky.png`). The same
+capture settles a second question raised from a phone screenshot: the preview draws the
+lowercase glyph when the keyboard is unshifted.
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

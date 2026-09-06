@@ -484,10 +484,17 @@ final class KeyboardView: UIView {
   /// instead, and on a phone on 2026-09-05 it was — the preview came out as a rectangle
   /// with its top sliced flat, sitting over the candidate bar and hiding a suggestion.
   ///
-  /// So it is clamped. A clamped preview overlaps the bar, which is why `touchesBegan`
-  /// hides the one slot it covers rather than leaving a suggestion half-readable behind
-  /// it: a preview that hides a word by accident looks broken, and one that replaces it
-  /// deliberately does not.
+  /// So it is clamped, and a clamped preview overlaps the bar. It is opaque and it is
+  /// brought to the front, so it covers the part of a word it sits on and leaves the rest
+  /// legible, which is what a key floating over a bar looks like.
+  ///
+  /// **It used to hide the whole slot underneath it, and that was the flicker.** Hiding a
+  /// third of the bar on every top-row keystroke and restoring it on release is a
+  /// suggestion blinking out and back once per letter, which is what "the suggested word
+  /// keeps flickering or fading in and out" describes — reported 2026-09-05, still there
+  /// in the 0.0.3 build, and visible in `IMG_8416` as a blank middle cell in the one frame
+  /// captured mid-press. Covering part of a word for the length of a press is the smaller
+  /// wrong, and it is the one that does not move.
   private func previewFrame(above key: Key) -> CGRect {
     let frame = CGRect(
       x: key.frame.minX - 6, y: key.frame.minY - key.frame.height - 4,
@@ -505,25 +512,8 @@ final class KeyboardView: UIView {
       preview.text = isShifted ? String(letter).uppercased() : String(letter)
       preview.frame = previewFrame(above: key)
       preview.isHidden = false
-      hideBarSlot(under: preview.frame)
       bringSubviewToFront(preview)
     }
-  }
-
-  /// Hides whichever bar slots a clamped preview is sitting on, and only those.
-  private func hideBarSlot(under frame: CGRect) {
-    guard frame.minY < StockMetrics.suggestionBarHeight else { return }
-    let slotWidth = bounds.width / 3
-    for (index, label) in bubbleLabels.enumerated() {
-      let slot = CGRect(
-        x: slotWidth * CGFloat(index), y: 0,
-        width: slotWidth, height: StockMetrics.suggestionBarHeight)
-      label.isHidden = slot.intersects(frame)
-    }
-  }
-
-  private func showAllBarSlots() {
-    for label in bubbleLabels { label.isHidden = false }
   }
 
   /// Repeats the delete while the key is held. The point reported is the key's own
@@ -567,7 +557,6 @@ final class KeyboardView: UIView {
 
   override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
     preview.isHidden = true
-    showAllBarSlots()
     stopDeleteRepeat()
     guard let touch = touches.first, let geometry else { return }
     let point = touch.location(in: self)
@@ -580,7 +569,6 @@ final class KeyboardView: UIView {
 
   override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
     preview.isHidden = true
-    showAllBarSlots()
     stopDeleteRepeat()
     guard let geometry else { return }
     for key in geometry.keys {
