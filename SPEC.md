@@ -1852,9 +1852,12 @@ command key does.
 integration suites typed a space with `controller.handle(spaceKey, at: .zero)`, because the
 point was ignored for a space and the origin was convenient. Once the point decides, that
 helper strikes the top-left corner of the keyboard. Four tests failed and they were right
-to; the helper now strikes the space bar's own centre. This is the third instance of the
-pattern section 8.1 already records: a convenience shared by every fixture in a group
-deletes the state nothing is testing.
+to; the helper now strikes the space bar's own centre. This is the second instance of the
+pattern section 8.1 records — that one was eleven tests all clearing the auto-shift — and
+they differ in a way worth keeping: there the convenience deleted a state the code already
+cared about, here it supplied a value the code did not care about *yet*. A shared
+convenience is not only a blind spot for today's behaviour; it is a bet that the thing it
+holds constant will stay irrelevant.
 
 **Two properties of stock checked while in this code, both already correct.** From US
 8,232,973 B2 (Kocienda and others, priority 2008-01-09), which is the specification of the

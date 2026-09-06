@@ -424,4 +424,35 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   **Still unproven on a device:** multi-touch at real typing speed, which needs his phone.
   Also unmeasured: the preview at 402pt and in light appearance.
 
-The tree is at 0.0.8 build 1, which is spent. Bump before archiving again.
+- **0.0.9 build 1.** Uploaded at 10:53 EDT on 2026-09-06 from commit `11634e6` with a clean
+  tree, 91 tests passing. Two changes, both of them things Jonah asked for that morning.
+
+  **The space bar says what keyboard this is.** Stock leaves a faint mark in the
+  bottom-right of its own space bar and this puts the name and version there in the same
+  treatment — measured, not styled: 28px of cap height at 3x, ending 18px from the right
+  edge and 18px from the bottom, at the white the caps letter with at alpha 0.30, which
+  lands on `#777777` against stock's `#787878`. It is also the identity check that catches
+  a simulator quietly reverting to the system keyboard, which had already produced one
+  stock-against-stock measurement that came back perfect. SPEC.md A.19 has the numbers.
+
+  **The space bar is a point in the constellation.** It was not one, and could not have
+  been: the candidate pool was the letter keys, so a tap on a letter could never be scored
+  as a space and a tap on the space bar was not scored at all. Adding it alone would have
+  changed nothing, because the cost function divided every horizontal distance by one
+  column pitch and the space bar is 615px wide against a letter's 109 — a tap 13px inside
+  its own left edge scored 2.32 to space and 1.32 to `x` one row up. The normalizer now
+  belongs to the key being measured to, which is identity for a key of the standard letter
+  width, so no letter-to-letter score moves and no tuning constant changes meaning.
+  SPEC.md A.20.
+
+  **Verified in the hand.** On a 430pt simulator, `hi there` types normally; the bottom
+  edge of `b` gives `b`; a tap a hair inside the space bar under `b` gives a space; and a
+  tap 13px inside the space bar's left edge gives a space where it would have given `x`.
+
+  **Not in this build, and named so it is not mistaken for done:** `isnthere` still cannot
+  become `is there`, because a candidate word cannot contain a boundary. The period key is
+  excluded from matching against Jonah's stated rule, as a judgment recorded in A.20 for
+  him to overturn. The preview at 402pt is unmeasured, and multi-touch at real typing speed
+  has still never been exercised on a device.
+
+The tree is at 0.0.9 build 1, which is spent. Bump before archiving again.
