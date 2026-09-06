@@ -1580,6 +1580,49 @@ that is missing from the lexicon, which was reported in the same message and is 
 diagnosed: a word absent from the list and a word present but never ranked into the top
 three are different defects, and which of the two he hit was not established.
 
+### A.17 — three vertical bands, and a diagnosis that was exactly backwards
+
+The keyboard sits in three stacked distances and for a while the code had one number for
+two of them.
+
+    stockPlateToFirstRow      156 / 3    from the stock plate's top edge to the top of row 0
+    systemBandAboveInputView  the difference, ~52px / 3 — what iOS draws above our input view
+    suggestionBarHeight       104 / 3    the bar this keyboard draws itself
+
+The 156 was measured from a stock screenshot and it is plate-relative: it is a distance
+inside iOS's keyboard, starting above where a custom keyboard's own input view begins. Our
+suggestion bar's height is view-relative and it is 104/3. Commit `3a9fde1` changed the
+constant from 104 to 156 for both uses at once, which pushed the first row 51px lower than
+stock's and left a 51px strip at the top of our own view that nothing drew.
+
+**The earlier note in the source read this backwards.** It recorded the 51px as a defect
+that `3a9fde1` had *fixed*. `3a9fde1` introduced it. That is recorded here rather than
+quietly corrected, because the inverted reading survived a re-reading of the same commit:
+re-reading is not a check, and the thing that settled it was `git show`.
+
+Measured on the simulator after the split, stock beside ours in the same field within a
+minute: **stock's plate to row 0 is 156px, ours is 154px.** It was 206px before.
+
+**The 51px also had a second symptom, which was reported as a colour.** On 2026-09-06 at
+08:40, on 0.0.5, the keyboard was reported as having "the supurflous color mismatch
+background" back. Scanning his screenshot — Messages, dark, numeric plane — down the centre
+column: the keyboard panel's top edge is at y=269, a bright edge line at `#414141` fading
+to `#1D1E1D` by y=291, and the colour changes to `#191A1C` at y=320. Two greys with a hard
+boundary. **269 to 320 is 51 pixels.** The strip is the band, showing as a colour because
+nothing of ours was drawn in it. The same scan on 0.0.7 in the same app and appearance:
+edge at y=1618 `#3B3B3E`, plate colour `#171717` by y=1621 — three pixels of antialiasing
+instead of fifty-one of a second grey.
+
+A real device and a simulator are not comparable pipeline to pipeline, so the two colours
+are not compared here. The 51 is, because it is a distance inside one image.
+
+**Still open, and deliberately not folded into this story.** Below row 3 there is a 12px
+residual in the other direction: stock measures 166px from the last row to the globe strip
+and ours 154. It is opposite in sign to the 51 and it is not explained. A single cause
+producing errors of both signs is possible and is not evidence of one, so it stays a
+separate open question until something measures it.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.
