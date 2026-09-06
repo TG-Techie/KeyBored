@@ -2353,6 +2353,69 @@ row-geometry delta: a hard shadow at radius 0 extends the cap's apparent bottom 
 exactly its offset, so measuring a cap's extent while it has one measures the shadow.
 
 
+### A.29 — the boundary stopped buying edits, and what that did and did not fix
+
+A.22 fixed the tie and left the formula: `best.cost < literalCost + 0.5 * tapCount`. At
+dead-centre taps `literalCost` is exactly zero, so the slack is `0.5 * tapCount` and nothing
+else, and an edit costs a flat 1.5 — **so from three taps up an edit is always affordable
+and gets more affordable the longer the word.** `iphone` → `phone` paid 1.5 against a slack
+of 3.0. `borekey` → `horsey` paid 4.0 against 3.5 and survived by half a unit out of four.
+The code's own comment says a precise typist should not have corrections forced on them and
+the arithmetic did the reverse.
+
+**The defect is dividing a per-event penalty by the word's length.** A distance cost is
+per-tap and genuinely accumulates: seven taps can each be a little off. An edit is one
+event — the matcher supposing a tap happened that did not, or did not happen that did — and
+it does not become more plausible because the word is long. The two were being added into
+one scalar and then measured against one per-tap budget.
+
+**Measured over the whole probe set, the edit count separates the two classes exactly.**
+Re-run at 430pt against the 75,646-word lexicon on 2026-09-06, printing at full precision:
+
+| | edits | cost |
+|---|---|---|
+| all sixteen one-key-slip fixtures | 0 | 1.0, except `becahse` → `because` at 1.5 |
+| `iphone` → `phone` | 1 | 1.5 |
+| `jonah` → `josh` | 1 | 2.5 |
+| `borekey` → `horsey` | 1 | 4.0 |
+| `hte` → `hate`, `teh` → `eh`, `ios` → `bios` | 1 | 1.5 |
+| `tg` → `g`, `gm` → `g`, `vx` → `v`, `qk` → `k`, `zj` → `j`, `mn` → `m` | 1 | 1.5 |
+| `asdf` → `add`, `aapl` → `asp`, `wifi` → `wig`, `xyz` → `ditz` | 1 | 2.5–3.5 |
+
+Every genuine correction reaches its word with no edit at all. `becahse` → `because` is the
+one fixture at 1.5 and it is still edit-free: `h` to `c` is simply two keys of distance.
+Every edit-carrying candidate in the set is junk.
+
+**So the rule is that a correction may re-read a tap but may not invent one or throw one
+away.** `Predictor.commit` returns the literal when `best.edits > 0`, before the slack
+comparison. What to suggest and when to overwrite stay two decisions: the candidate is still
+ranked, still shown in the bar, and a tap on it still applies it.
+
+**What it fixed.** `iphone` now stands. `borekey` is safe by construction rather than by
+half a unit — its only candidate carries an edit, so the product's name is no longer half a
+normalized unit from being rewritten by its own keyboard. Five of the six exact ties A.22
+was protecting (`jonah`, `isnthere`, `ios`, `hte`, `teh`) never reach the tie comparison any
+more; they are stopped one line earlier and for a different reason. `qwer` → `weer` is the
+one still standing on the tie rule, which is why that rule stays.
+
+**What it did not fix, and cannot.** `keybored` → `keynoted` (2.0), `sry` → `dry` (1.0),
+`np` → `no` and `pw` → `ow` (1.0) are all edit-free substitutions. `sry` → `dry` costs
+exactly what `thr` → `the` costs at exactly the same length, and `np` → `no` costs what any
+two-letter one-key slip costs. **No function of the candidate's cost, the literal's cost and
+the tap count can separate them**, because as far as this scorer can see they are the same
+event. Separating them needs something the scorer does not have and deliberately does not
+have — see A.22's answer on why there is no frequency term anywhere. They are a limit of the
+rule and `theBoundaryNeverBuysAnEdit` asserts them as they behave, so that the day one of
+them changes is a day a test fails and someone reads this.
+
+**A constant cap was considered and rejected.** Capping the total distance at one slip's
+worth would also fix `keybored`, but the cap has to sit above `becahse` at 1.5 and below
+`keybored` at 2.0, and there is no measured quantity in that gap — every value in it is
+fitted to this table rather than derived from anything. Jonah, 13:00: the named words are
+"examples to remind one of the problem domain", and a constant chosen to make them behave is
+the fit this note exists to refuse.
+
+
 ## Appendix B — sources
 
 - Ken Kocienda, *Creative Selection* — the origin of the constellation method.

@@ -400,3 +400,69 @@ func aOneKeySlipStillCorrectsAndNotOnATie(typed: String, intended: String) {
     "\(typed) now wins by less than a quarter unit and is near the tie boundary")
   #expect(Predictor(matcher: matcher).commit(for: word) == .correction(intended))
 }
+
+/// **A correction may re-read a tap; it may not invent one or throw one away.**
+///
+/// The whole measured set in one assertion, because the deliverable is the rule and not
+/// the five words Jonah named. At dead-centre taps every one of the sixteen one-key-slip
+/// fixtures reaches its word with zero edits, and every edit-carrying candidate in the
+/// non-word set is junk — so the edit count separates the two exactly, and the boundary
+/// stops buying edits at any word length. SPEC.md Appendix A.29.
+///
+/// The four exceptions are named rather than omitted. `np` → `no`, `pw` → `ow`,
+/// `sry` → `dry` and `keybored` → `keynoted` are edit-free substitutions costing the same
+/// as a genuine slip at the same length, so nothing in this scorer can tell them from the
+/// corrections above that must keep firing. They are a limit of the rule and are listed
+/// here so the next reader does not mistake them for something this test missed.
+@Test func theBoundaryNeverBuysAnEdit() {
+  let matcher = makeMatcher()
+  let predictor = Predictor(matcher: matcher)
+
+  func commit(_ typed: String) -> Commit {
+    var word = WordInProgress()
+    for neighborhood in neighborhoods(perfectTaps(typed, matcher.geometry), matcher) {
+      word.append(neighborhood)
+    }
+    return predictor.commit(for: word)
+  }
+
+  // Deliberate non-words. Every one of these must go in as typed.
+  let mustStand = [
+    "jonah", "isnthere", "qwer", "ios", "hte", "teh", "iphone", "borekey", "xkqjv",
+    "kocienda", "asdf", "zxcv", "hjkl", "xyz", "aapl", "wifi", "tg", "hj", "gm", "vx",
+    "qk", "zj", "mn", "ok", "brb", "idk", "tbh",
+  ]
+  for typed in mustStand {
+    #expect(commit(typed) == .literal(typed), "\(typed) was rewritten")
+  }
+
+  // The four this rule does not reach, asserted as they actually behave so that the day
+  // one of them changes is a day this test fails and someone reads why.
+  #expect(commit("np") == .correction("no"))
+  #expect(commit("pw") == .correction("ow"))
+  #expect(commit("sry") == .correction("dry"))
+  #expect(commit("keybored") == .correction("keynoted"))
+
+  // And the corrections that must keep firing.
+  let mustCorrect = [
+    ("hrllo", "hello"), ("helli", "hello"), ("thr", "the"), ("thrre", "there"),
+    ("keyboatd", "keyboard"), ("mornibg", "morning"), ("abiut", "about"),
+    ("peopke", "people"), ("becahse", "because"), ("woukd", "would"),
+    ("thsnks", "thanks"), ("reslly", "really"), ("somethibg", "something"),
+    ("olease", "please"), ("tomorrpw", "tomorrow"), ("frienf", "friend"),
+  ]
+  for (typed, intended) in mustCorrect {
+    #expect(commit(typed) == .correction(intended), "\(typed) no longer corrects")
+  }
+
+  // The premise the rule rests on, asserted rather than assumed: none of the sixteen needs
+  // an edit, and the rule would be silently vacuous if that ever stopped being true.
+  for (typed, _) in mustCorrect {
+    var word = WordInProgress()
+    for neighborhood in neighborhoods(perfectTaps(typed, matcher.geometry), matcher) {
+      word.append(neighborhood)
+    }
+    let best = matcher.candidates(for: word.neighborhoods, limit: 1).first
+    #expect(best?.edits == 0, "\(typed) now reaches its word through an edit")
+  }
+}

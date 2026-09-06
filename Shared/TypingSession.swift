@@ -208,6 +208,37 @@ public struct Predictor: Sendable {
       return .literal(literal)
     }
 
+    // **A correction may re-read a tap. It may not invent one or throw one away.**
+    //
+    // The search can reach a word three ways: matching a tap to a letter at the distance
+    // between them, supposing a letter was never tapped (`omissionPenalty`), or supposing
+    // a tap was a stray (`insertionPenalty`). The first is the constellation method
+    // working — the user aimed at `hello` and one finger landed on `r`. The other two are
+    // the matcher supposing the taps are not what happened, and `Candidate.edits` counts
+    // how often it had to.
+    //
+    // **Measured over the whole probe set at dead-centre taps, that count separates the
+    // wanted corrections from the unwanted ones exactly.** All sixteen one-key-slip
+    // fixtures reach their word with zero edits, at a cost of 1.0 — `becahse` → `because`
+    // is the one at 1.5, and it is still zero edits, because `h` to `c` is simply two keys
+    // of distance. Every edit-carrying candidate in the set is junk: `iphone` → `phone`,
+    // `jonah` → `josh`, `hte` → `hate`, `teh` → `eh`, `ios` → `bios`, `borekey` → `horsey`,
+    // `tg` → `g`, `gm` → `g`, `vx` → `v`, `qk` → `k`, `zj` → `j`, `mn` → `m`, `asdf` →
+    // `add`, `aapl` → `asp`, `wifi` → `wig`, `xyz` → `ditz`, `kocienda` → `kickers`.
+    //
+    // **This is also where the slack formula was breaking.** An edit costs a flat 1.5
+    // while the slack is `0.5 * tapCount`, so from three taps up an edit is always
+    // affordable and gets *more* affordable the longer the word — `iphone` → `phone` paid
+    // 1.5 against a slack of 3.0 and `borekey` → `horsey` survived by half a unit out of
+    // 4.0. The defect is dividing a per-event penalty by the word's length. Rather than
+    // retune the divisor, the two kinds of cost are separated: distance is per-tap and
+    // still measured per-tap below, and an edit is a single event that a boundary does not
+    // buy at any length. SPEC.md Appendix A.29.
+    //
+    // What to suggest and when to overwrite stay two decisions. An edit-carrying candidate
+    // is still ranked, still shown in the bar, and a tap on it still applies it.
+    if best.edits > 0 { return .literal(literal) }
+
     // **A tie keeps the literal.** The comparison is strict, and that is not a rounding
     // preference — it is the only side of an exact tie the asymmetry permits. A tie means
     // the evidence is exactly balanced between what the user typed and something else,
@@ -217,8 +248,13 @@ public struct Predictor: Sendable {
     //
     // Measured at dead-centre taps, where `literalCost` is exactly zero and the slack is
     // therefore `0.5 * tapCount` and nothing else, six of eleven unwanted rewrites were
-    // exact ties and now stand: `jonah` → `josh`, `isnthere` → `anthers`, `qwer` → `weer`,
-    // `ios` → `bios`, `hte` → `hate`, `teh` → `eh`. SPEC.md Appendix A.22.
+    // exact ties and stood on this rule: `jonah` → `josh`, `isnthere` → `anthers`,
+    // `qwer` → `weer`, `ios` → `bios`, `hte` → `hate`, `teh` → `eh`. SPEC.md A.22.
+    //
+    // Five of those six carry an edit and so never reach this comparison any more — the
+    // rule above stops them one line earlier and for a different reason. `qwer` → `weer`
+    // is the one still standing here, and it is why this stays a rule rather than becoming
+    // a historical note: an exact tie between two edit-free readings is a real state.
     //
     // **Two more are ties in arithmetic and not in IEEE, and still correct.** `np` → `no`
     // and `pw` → `ow` accumulate a cost of 0.9999999999999997 against a slack of 1.0 —
