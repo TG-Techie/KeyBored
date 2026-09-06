@@ -109,6 +109,27 @@ which merely mentions the trailer — this file's own commit does — is not a h
 
     git log --format='%B' | grep -nE '^Claude-Session:|^https://claude\.ai/code/session'
 
+**Six commits already on GitHub carry one, and they stay.** `a5ceed4`, `9932d04`,
+`48d00d2`, `3a9fde1`, `a8f40ef` and `48269b4`, from 2026-09-05 20:37 to 2026-09-06 00:38.
+Jonah was asked at 02:09 EDT on 2026-09-06 whether to rewrite them out, with the
+recommendation that he should and with the repository a day old and unforked. He said to
+keep going instead. **So the answer to "should these be scrubbed" is no, and the reason to
+write it here is that the question has already been raised twice — once that night and once
+the next morning — and each round costs him a message.** The hook above is what closes it
+going forward; the six are history.
+
+His words, verbatim, relayed by crisp-kelp: "Continue to push, maybe give one running
+working branch and Marge onto main when a given commitments TestFlight for now (later
+main'll for AppStore and a separate branch h for TestFlight)". Recorded by hazy-zephyr,
+2026-09-06; I did not receive it directly and am attributing the relay rather than the
+channel.
+
+**The branch model in the same sentence is authorized and unbuilt.** One running working
+branch; merge onto `main` when a commit has actually reached TestFlight. Later `main`
+becomes the App Store branch and TestFlight gets its own. Nothing of it exists yet — every
+commit so far is straight onto `main` — and it is written down here so that whoever builds
+it does not have to ask again whether they may.
+
 ## Changes to the keyboard are architectural, never patches
 
 Every change to the keyboard is made so that the finished code reads as though it had been
