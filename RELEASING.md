@@ -375,4 +375,24 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   by itself sufficient, and it is not a stale extension process either. Jonah was told
   before this went up and asked for it to ship anyway.
 
-The tree is at 0.0.6 build 1, which is spent. Bump before archiving again.
+- **0.0.7 build 1.** Uploaded at 08:58 EDT on 2026-09-06 from commit `cdfff93` with a clean
+  tree. It carries one change and it is the one 0.0.6 was meant to carry: taps landing in
+  the gaps between the key caps now register. 0.0.6's `hitTest` override was necessary and
+  not sufficient, because a keyboard extension draws in its own process and is composited
+  by another one, and the compositing process decides which touches to forward by what was
+  drawn — so a region left fully transparent was never offered to the extension at all.
+  The evidence, in the order it was taken: a probe on the first line of `hitTest` showing
+  that taps at x = 42 and 44 across the q/w boundary never called it while the six either
+  side did; the same x = 42 reaching `hitTest` in the suggestion bar and in rows 1 and 2
+  and failing at every height inside row 0, which is the only row where it falls in a
+  drawn gap; three builds measured against the same eight taps, no fill six of eight,
+  `.clear` six of eight, alpha 1/255 eight of eight; the field reading "Qqqqww" before and
+  "Qqqqqwww" after; and the plate sampled at the q/w gap with and without the fill, which
+  reads `#171717` either way in dark and `#E1E3E7` either way in light, so the fill is
+  invisible in both appearances. 81 tests passing, one of them new and standing in for a
+  property no unit test can reach.
+
+  **Still unproven on a device:** multi-touch at real typing speed, which needs his phone
+  and cannot be exercised here. Fixed in 0.0.6, unit-green, never typed on fast.
+
+The tree is at 0.0.7 build 1, which is spent. Bump before archiving again.
