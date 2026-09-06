@@ -355,4 +355,24 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   correcting to `don't`. The exported ipa was checked with `codesign -dvvv` for an
   `Apple Distribution` authority before it went up.
 
-The tree is at 0.0.5 build 1, which is spent. Bump before archiving again.
+- **0.0.6 build 1.** Uploaded at 08:37 EDT on 2026-09-06 from commit `4d1dff3` with a clean
+  tree. What it carries: the first row raised back to where stock draws it, after the
+  discovery that one constant was standing for both the stock plate-to-first-row distance
+  and our own suggestion bar's height; and one touch layer in place of three, which turns
+  on `isMultipleTouchEnabled` and so stops the keyboard dropping every touch but the first
+  of a multi-touch sequence. The evidence behind it, in the order it was taken: 80 tests
+  passing, two of them new sweeps over every point of the keyboard at 1pt spacing; the row
+  position measured against a stock screenshot on the simulator, stock plate to row 0 at
+  156px against ours at 154px, where it had been 206px; and the archive checked in the
+  built product for its icon, its `CFBundleName`, all four orientations, and exactly one
+  appex.
+
+  **One defect in this build is fixed on paper and not on the device.** A tap landing in
+  the 6pt drawn gap between two key caps still registers nothing. After a SpringBoard
+  restart, with BoreKey confirmed active by its 153px suggestion band against stock's 156,
+  a sweep at x = 30, 34, 38, 40, 42, 44, 46, 50 produced "Qqqqww" — the two taps at 42 and
+  44 lost. That is the same result as before the change, so the `hitTest` override is not
+  by itself sufficient, and it is not a stale extension process either. Jonah was told
+  before this went up and asked for it to ship anyway.
+
+The tree is at 0.0.6 build 1, which is spent. Bump before archiving again.
