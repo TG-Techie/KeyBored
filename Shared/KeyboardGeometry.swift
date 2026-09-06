@@ -60,12 +60,16 @@ public struct Key: Sendable {
 /// The measured stock proportions, kept in one place and named, so that the numbers
 /// in SPEC.md Appendix A and the numbers the keyboard draws with cannot drift apart.
 ///
-/// Horizontal values are fractions of the keyboard's width, because the stock
-/// keyboard's columns scale with the screen. Vertical values are in points, because
-/// its rows do not — a taller phone gets the same 45pt keys, not taller ones.
+/// Horizontal values are fractions of the keyboard's width, because the stock keyboard's
+/// columns scale with the screen. Vertical values are in points, because its rows do not
+/// scale continuously — but they are not one number either: the cap height takes one of
+/// two values depending on the phone, which is why `rowHeight` is a function. See it for
+/// the four devices that were measured.
 ///
-/// All of these came off a screenshot rather than a device. The proportions are
-/// trustworthy; the absolute point values still want checking against a simulator.
+/// The horizontal fractions came off a screenshot of a 430pt phone and were checked
+/// against stock on 390pt, 402pt and 440pt simulators on 2026-09-05: every one lands
+/// within about a pixel and a half, which is the width of the antialiased cap edge the
+/// threshold does not count.
 public enum StockMetrics {
   /// 1290px reference width, so every fraction below is `measuredPixels / 1290`.
   public static let referenceWidthPx: CGFloat = 1290
@@ -80,19 +84,90 @@ public enum StockMetrics {
   public static let returnWidthFraction: CGFloat = 300 / referenceWidthPx
 
   /// Vertical metrics, in points: measured pixels divided by the reference @3x scale.
-  public static let rowHeight: CGFloat = 135 / 3
+  ///
+  /// The gap and the strip are the same on every phone measured. The cap height is not,
+  /// and that is the one place where "vertical values are in points because stock's rows
+  /// do not scale" turned out to be only half true.
   public static let rowGap: CGFloat = 33 / 3
-  public static let suggestionBarHeight: CGFloat = 104 / 3
 
-  /// The row below `return` carrying the globe key. On the stock keyboard this is
-  /// where the emoji and dictation buttons sit; a custom keyboard puts the required
-  /// next-keyboard button there, which keeps rows 1 through 4 exactly where stock
-  /// puts them.
-  public static let bottomRowHeight: CGFloat = 47
+  /// The band above the first key row, which stock reserves whether or not it has
+  /// anything to put in it.
+  ///
+  /// 156px at 3x, measured 2026-09-05 as plate-top-to-first-row on the stock keyboard in
+  /// a Contacts search field on three simulators — 390pt, 402pt and 440pt wide — where it
+  /// came out at exactly 156 on all three. It was 104 here, which is the strip a custom
+  /// keyboard draws inside its own input view; the missing 52 is the band iOS draws above
+  /// that view, and counting only our half is what made this keyboard sit low against
+  /// stock in a side-by-side.
+  public static let suggestionBarHeight: CGFloat = 156 / 3
+
+  /// **The cap height depends on the phone, and there are two of them.**
+  ///
+  /// Measured 2026-09-05, stock keyboard, Contacts search field, dark, @3x:
+  ///
+  ///     iPhone 17e       390 pt wide    cap 129 px    row pitch 162 px
+  ///     iPhone 17 Pro    402 pt wide    cap 129 px    row pitch 162 px
+  ///     iPhone 17 Pro Max 440 pt wide   cap 135 px    row pitch 168 px
+  ///     Jonah's phone    430 pt wide    cap 135 px    row pitch 168 px
+  ///
+  /// The last row is from the screenshot pair in the repository's own notes rather than
+  /// from a simulator, and it is the reason this matters: the 135 that used to be the
+  /// only value here was measured on a 430pt phone and is right there. It is 6px too tall
+  /// on everything smaller, which is every device this project can put side by side with
+  /// stock.
+  ///
+  /// **The boundary is a guess and the two values are not.** Nothing was measured between
+  /// 402 and 430. 414 is where it sits because that is the width of the older Plus and
+  /// Max phones, which is the same class boundary Apple has drawn before — but a device
+  /// between 402 and 414, or between 414 and 430, would settle it and none was tried.
+  public static let largePhoneWidth: CGFloat = 414
+
+  public static func rowHeight(forWidth width: CGFloat) -> CGFloat {
+    width >= largePhoneWidth ? 135 / 3 : 129 / 3
+  }
+
+  /// The bottom row's `123` and the slot beside it, which on stock is the emoji key.
+  ///
+  /// Their sum plus one gap is `planeKeyWidthFraction`: 140 + 18 + 141 = 299. So the
+  /// bottom row is the same row either way, and the globe key — when the system asks
+  /// for one — takes stock's emoji slot rather than a row of its own.
+  public static let splitPlaneKeyWidthFraction: CGFloat = 140 / referenceWidthPx
+  public static let globeKeyWidthFraction: CGFloat = 141 / referenceWidthPx
+
+  /// What stock leaves below the last row: 22px at 3x, and nothing else.
+  ///
+  /// This was `bottomRowHeight = 47`, a whole row reserved for the globe key. There is
+  /// no such row. iOS draws its own globe and dictation strip *below* a custom
+  /// keyboard's input view, and stock's emoji key sits inside the bottom row. When
+  /// `needsInputModeSwitchKey` is false the reserved row was simply empty, and the
+  /// keyboard stood 40 points taller than stock with a band of bare plate under it —
+  /// photographed on a phone 2026-09-05 and measured at 142px against stock's 22px.
+  /// SPEC.md section 11.4.
+  public static let bottomPadding: CGFloat = 22 / 3
+
+  /// The two rules in the candidate bar, measured off a stock keyboard in a Contacts
+  /// search field on a simulator 2026-09-05: 3px wide and 72px tall at 3x, `#323234`,
+  /// at exactly a third and two thirds of the width, and drawn whether or not the bar
+  /// has anything in it.
+  ///
+  /// **Their vertical position cannot be matched exactly and this is the closest we can
+  /// get.** Stock's rules run from 117px to 46px above the top of the first key row. A
+  /// custom keyboard's input view starts 104px above that row and iOS draws its own
+  /// backdrop in the 48px above it, so the top 13px of stock's rule is in a band this
+  /// keyboard does not own. Centring in the strip we do own puts them 7px low.
+  public static let barDividerWidth: CGFloat = 3 / 3
+  public static let barDividerHeight: CGFloat = 72 / 3
+
+  /// The corner radius of a key cap: 21px at 3x, measured by walking a cap's top edge
+  /// until it reaches full width. The keyboard drew 5pt before that was measured.
+  public static let capCornerRadius: CGFloat = 21 / 3
 
   /// Total height the extension asks for, excluding the home-indicator safe area.
-  public static var totalHeight: CGFloat {
-    suggestionBarHeight + 4 * rowHeight + 3 * rowGap + bottomRowHeight
+  ///
+  /// Stock on a 402pt phone: 156 + 4×129 + 3×33 + 22 = 793px, and the plate really does
+  /// run from 1617 to 2410 in a 2622px capture.
+  public static func totalHeight(forWidth width: CGFloat) -> CGFloat {
+    suggestionBarHeight + 4 * rowHeight(forWidth: width) + 3 * rowGap + bottomPadding
   }
 }
 
@@ -102,6 +177,14 @@ public enum StockMetrics {
 public struct KeyboardGeometry: Sendable {
   public let width: CGFloat
   public let plane: Plane
+
+  /// Whether the layout carries the next-keyboard globe.
+  ///
+  /// Part of the geometry rather than of the drawing, because it changes where the
+  /// space bar starts. It comes from `UIInputViewController.needsInputModeSwitchKey`,
+  /// which is the system's answer to "does this installation need a way off this
+  /// keyboard" and is false when iOS provides its own switcher.
+  public let hasGlobeKey: Bool
   public let keys: [Key]
 
   /// Centre-to-centre spacing, the unit distances are normalized by. Scores expressed
@@ -117,7 +200,8 @@ public struct KeyboardGeometry: Sendable {
     Array("zxcvbnm"),
   ]
 
-  public init(width: CGFloat, plane: Plane = .letters) {
+  public init(width: CGFloat, plane: Plane = .letters, hasGlobeKey: Bool = false) {
+    self.hasGlobeKey = hasGlobeKey
     self.width = width
     self.plane = plane
 
@@ -129,10 +213,10 @@ public struct KeyboardGeometry: Sendable {
     let keyWidth = (width - 2 * margin - 9 * gap) / 10
 
     self.columnPitch = keyWidth + gap
-    self.rowPitch = StockMetrics.rowHeight + StockMetrics.rowGap
+    self.rowPitch = StockMetrics.rowHeight(forWidth: width) + StockMetrics.rowGap
 
     var keys: [Key] = []
-    let rowHeight = StockMetrics.rowHeight
+    let rowHeight = StockMetrics.rowHeight(forWidth: width)
     let firstRowTop = StockMetrics.suggestionBarHeight
 
     func rowTop(_ row: Int) -> CGFloat {
@@ -162,6 +246,13 @@ public struct KeyboardGeometry: Sendable {
     // Row 2: shift, the row's glyphs centred, delete. The glyphs are centred on their
     // own rather than packed against shift, which is what puts them on the same column
     // pitch as the rows above.
+    //
+    // The group always occupies the same span — seven letter keys and the six gaps
+    // between them — whatever the plane puts inside it. On the letters plane that is
+    // `z`…`m` at the column pitch; on the number and symbol planes the identical span is
+    // divided into five wider punctuation caps instead. Measured off stock captures on a
+    // 1206px simulator, 2026-09-05: the group runs x 197-1008 on all three planes, with
+    // 101px caps on letters against 148px on the other two. SPEC.md Appendix A.
     let row2Glyphs = glyphRows[2]
     let shiftWidth = width * StockMetrics.shiftWidthFraction
     let deleteWidth = width * StockMetrics.deleteWidthFraction
@@ -171,16 +262,18 @@ public struct KeyboardGeometry: Sendable {
         role: plane == .letters ? .shift : .plane(plane == .numbers ? .symbols : .numbers),
         frame: CGRect(x: margin, y: rowTop(2), width: shiftWidth, height: rowHeight),
       ))
-    let row2Span = CGFloat(row2Glyphs.count) * keyWidth + CGFloat(row2Glyphs.count - 1) * gap
+    let row2Span = 7 * keyWidth + 6 * gap
+    let row2KeyWidth =
+      (row2Span - CGFloat(row2Glyphs.count - 1) * gap) / CGFloat(row2Glyphs.count)
     var x2 = (width - row2Span) / 2
     for (i, glyph) in row2Glyphs.enumerated() {
       keys.append(
         Key(
           id: KeyID(row: 2, index: i + 1),
           role: .letter(glyph),
-          frame: CGRect(x: x2, y: rowTop(2), width: keyWidth, height: rowHeight),
+          frame: CGRect(x: x2, y: rowTop(2), width: row2KeyWidth, height: rowHeight),
         ))
-      x2 += keyWidth + gap
+      x2 += row2KeyWidth + gap
     }
     keys.append(
       Key(
@@ -190,39 +283,46 @@ public struct KeyboardGeometry: Sendable {
           x: width - margin - deleteWidth, y: rowTop(2), width: deleteWidth, height: rowHeight),
       ))
 
-    // Row 3: plane switch, space, return. Space takes what is left, which reproduces
-    // the measured 615px to within a pixel.
-    let planeWidth = width * StockMetrics.planeKeyWidthFraction
+    // Row 3: plane switch, optionally the globe, space, return. Space takes what is
+    // left, which reproduces the measured 615px to within a pixel either way — the
+    // globe occupies stock's emoji slot, and the two of them plus a gap are exactly as
+    // wide as the undivided `123`.
+    let planeWidth =
+      hasGlobeKey
+      ? width * StockMetrics.splitPlaneKeyWidthFraction
+      : width * StockMetrics.planeKeyWidthFraction
+    let globeWidth = hasGlobeKey ? width * StockMetrics.globeKeyWidthFraction : 0
     let returnWidth = width * StockMetrics.returnWidthFraction
-    let spaceWidth = width - 2 * margin - planeWidth - returnWidth - 2 * gap
+    let leadingWidth = hasGlobeKey ? planeWidth + gap + globeWidth : planeWidth
+    let spaceWidth = width - 2 * margin - leadingWidth - returnWidth - 2 * gap
     keys.append(
       Key(
         id: KeyID(row: 3, index: 0),
         role: .plane(plane == .letters ? .numbers : .letters),
         frame: CGRect(x: margin, y: rowTop(3), width: planeWidth, height: rowHeight),
       ))
-    keys.append(
-      Key(
-        id: KeyID(row: 3, index: 1),
-        role: .space,
-        frame: CGRect(
-          x: margin + planeWidth + gap, y: rowTop(3), width: spaceWidth, height: rowHeight),
-      ))
+    if hasGlobeKey {
+      keys.append(
+        Key(
+          id: KeyID(row: 3, index: 1),
+          role: .nextKeyboard,
+          frame: CGRect(
+            x: margin + planeWidth + gap, y: rowTop(3), width: globeWidth, height: rowHeight),
+        ))
+    }
     keys.append(
       Key(
         id: KeyID(row: 3, index: 2),
+        role: .space,
+        frame: CGRect(
+          x: margin + leadingWidth + gap, y: rowTop(3), width: spaceWidth, height: rowHeight),
+      ))
+    keys.append(
+      Key(
+        id: KeyID(row: 3, index: 3),
         role: .newline,
         frame: CGRect(
           x: width - margin - returnWidth, y: rowTop(3), width: returnWidth, height: rowHeight),
-      ))
-
-    // Row 4: the globe, in the slot where stock puts the emoji button.
-    keys.append(
-      Key(
-        id: KeyID(row: 4, index: 0),
-        role: .nextKeyboard,
-        frame: CGRect(
-          x: margin, y: rowTop(4), width: shiftWidth, height: StockMetrics.bottomRowHeight),
       ))
 
     self.keys = keys
@@ -233,13 +333,17 @@ public struct KeyboardGeometry: Sendable {
     case .letters:
       return letterRows
     case .numbers:
-      return [Array("1234567890"), Array("-/:;()$&@"), Array(".,?!'")]
+      return [Array("1234567890"), Array("-/:;()$&@\""), Array(".,?!'")]
+    // The bullet closing the symbol plane's second row is easy to miss and stock has it;
+    // without it the row is nine keys and lands half a column pitch in from the row above,
+    // which is the letters plane's arrangement in the wrong place. Both second rows were
+    // read off stock captures on 2026-09-05 and both are ten keys wide.
     case .symbols:
-      return [Array("[]{}#%^*+="), Array("_\\|~<>€£¥"), Array(".,?!'")]
+      return [Array("[]{}#%^*+="), Array("_\\|~<>€£¥•"), Array(".,?!'")]
     }
   }
 
-  public var height: CGFloat { StockMetrics.totalHeight }
+  public var height: CGFloat { StockMetrics.totalHeight(forWidth: width) }
 
   public func key(_ id: KeyID) -> Key? { keys.first { $0.id == id } }
 

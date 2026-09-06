@@ -9,10 +9,100 @@
 import CoreGraphics
 import Foundation
 
+/// What the field being typed into says it wants.
+///
+/// A translation of the `UITextInputTraits` every host's text input already carries, into
+/// the terms this routing uses. Translated at the host boundary rather than read here, for
+/// two reasons. `Shared/` stays clear of the extension-only half of UIKit, as it does for
+/// everything else. And every member of `UITextInputTraits` is an `@optional` protocol
+/// requirement, which Swift imports as an optional — `proxy.returnKeyType` has type
+/// `UIReturnKeyType?` — so the fallback for "the field did not say" is decided once, in one
+/// place, instead of at each use. SPEC.md section 11.
+public struct DocumentTraits: Sendable, Equatable {
+  /// `UIReturnKeyType`, minus the distinctions stock does not draw: `.google` and
+  /// `.yahoo` are search keys from before those were separate products and stock labels
+  /// both the same as `.search`.
+  public enum ReturnKey: Sendable, Equatable {
+    /// The field asked for nothing, so the key is the plain grey one with stock's ↵.
+    case newline
+    case go
+    case search
+    case send
+    case join
+    case next
+    case route
+    case done
+    case emergencyCall
+    case `continue`
+
+    /// Stock fills every one of these but `.newline` in blue. Named here rather than in
+    /// the view because it is what the case *is*, not how it is drawn.
+    public var isAction: Bool { self != .newline }
+  }
+
+  /// Which capital the field wants, in `UITextAutocapitalizationType`'s four kinds.
+  public enum Autocapitalization: Sendable, Equatable {
+    case none
+    case words
+    case sentences
+    case allCharacters
+  }
+
+  public var autocapitalization: Autocapitalization
+
+  /// What the field asked its return key to be.
+  ///
+  /// This used to be the word to draw, a `String?`, on the reasoning that drawing it was
+  /// the only thing done with it. That was wrong twice over. **iOS 26 draws glyphs, not
+  /// words, for at least two of these** — measured 2026-09-05, a right arrow for `.go` in
+  /// Safari's address bar and a magnifier for `.search` in a Contacts search field, both
+  /// beside this keyboard on the same simulator. And an action return key is blue where a
+  /// plain one is grey, which is a fact about the key rather than about its caption. A
+  /// string could carry neither, so the case is carried instead and the drawing is
+  /// decided where the drawing happens.
+  public var returnKey: ReturnKey
+
+  /// A password field. Nothing is stored either way — PRIVACY.md is unchanged — but the
+  /// candidate bar would otherwise print the password in the largest type on screen.
+  public var isSecure: Bool
+
+  public init(
+    autocapitalization: Autocapitalization = .sentences,
+    returnKey: ReturnKey = .newline,
+    isSecure: Bool = false,
+  ) {
+    self.autocapitalization = autocapitalization
+    self.returnKey = returnKey
+    self.isSecure = isSecure
+  }
+
+  /// What holds when the field says nothing. `.sentences` is UIKit's own documented
+  /// default for `autocapitalizationType`, not a preference of this project's.
+  public static let unspecified = DocumentTraits()
+}
+
 /// Somewhere text can be inserted and deleted, and read back as far as the cursor.
 ///
 /// The keyboard extension's destination is the host app's text field, reached through
 /// `UITextDocumentProxy`. The container app's destination is a text view on screen. This
+/// What the shift key is doing, which is three things and not two.
+///
+/// This was a `Bool` until 2026-09-05, and the missing state was caps lock: a double tap
+/// did what a single tap does, so the only way to type two capitals in a row was to hold
+/// the field in `.allCharacters`. Off and one-shot both read as "not locked" and one-shot
+/// and locked both read as "shifted", so neither pair collapses into a flag without losing
+/// the other distinction. Stock draws the difference too — a latched shift is a barred
+/// arrow, not a filled one.
+public enum ShiftState: Sendable, Equatable {
+  /// The next letter comes out as it is drawn on the key.
+  case off
+  /// The next letter is capitalized, and then the shift releases itself.
+  case oneShot
+  /// Every letter is capitalized until the shift key is struck again. Auto-shift does
+  /// not clear this; only a strike does.
+  case locked
+}
+
 /// protocol is the whole of what the routing needs from either, which is what lets the
 /// same code drive both — and it means the routing can be tested without a keyboard
 /// extension, a host app, or a simulator.
@@ -32,6 +122,10 @@ public protocol TextDocument: AnyObject {
   /// the host declines to say.
   var textBeforeInput: String? { get }
 
+  /// What the field wants of the keyboard. A host that cannot say returns
+  /// `.unspecified`; the container app's try-it surface does exactly that.
+  var traits: DocumentTraits { get }
+
   func insertText(_ text: String)
   func deleteBackward()
 }
@@ -49,10 +143,38 @@ public protocol TextDocument: AnyObject {
 public final class KeyboardController {
   public private(set) var geometry: KeyboardGeometry
   public private(set) var plane: Plane = .letters
-  /// Set from the document rather than remembered: see `updateAutoShift`. The `true`
+  /// Set from the document rather than remembered: see `updateAutoShift`. The `oneShot`
   /// here is only what holds until the first look, which `init` takes immediately.
-  public private(set) var isShifted = true
+  public private(set) var shift: ShiftState = .oneShot
+
+  /// Whether the next letter comes out capitalized. Both shifted states say yes; what
+  /// separates them is what happens to the state afterwards.
+  public var isShifted: Bool { shift != .off }
+
+  /// How long after a shift strike a second one still latches. Stock's window is around
+  /// a third of a second; this was not measured off a stock keyboard, it is the standard
+  /// double-tap interval and it feels right. Section 10 has it as a tunable.
+  static let capsLockWindow: TimeInterval = 0.3
+
+  /// When the shift key was last struck, on the clock the caller passes to `handle`.
+  /// Only a strike moves it, so auto-shift arming the key cannot look like a first tap.
+  private var lastShiftTap: TimeInterval = -.greatestFiniteMagnitude
   public private(set) var bar: CandidateBar = .empty
+
+  /// What the field asked for, re-read whenever the document changes. See
+  /// `DocumentTraits`; `.unspecified` until a document has been looked at.
+  public private(set) var traits: DocumentTraits = .unspecified
+
+  /// Whether the layout carries the globe key, from the host's
+  /// `needsInputModeSwitchKey`. It changes the geometry rather than only the drawing,
+  /// because the globe takes stock's emoji slot and the space bar starts after it.
+  public var hasGlobeKey: Bool = false {
+    didSet {
+      guard hasGlobeKey != oldValue else { return }
+      rebuildGeometry()
+      refresh()
+    }
+  }
 
   private let lexicon: Lexicon
   private var predictor: Predictor
@@ -80,11 +202,13 @@ public final class KeyboardController {
     self.geometry = KeyboardGeometry(width: width, plane: .letters)
     self.predictor = Predictor(
       matcher: ConstellationMatcher(geometry: geometry, lexicon: lexicon))
+    readTraits()
     updateAutoShift()
   }
 
   public func attach(_ document: TextDocument) {
     self.document = document
+    readTraits()
     updateAutoShift()
   }
 
@@ -93,10 +217,17 @@ public final class KeyboardController {
   /// visible stall for no reason.
   public func resize(width: CGFloat) {
     guard width > 0, width != geometry.width || plane != geometry.plane else { return }
-    geometry = KeyboardGeometry(width: width, plane: plane)
+    rebuildGeometry(width: width)
+    refresh()
+  }
+
+  /// The one place a geometry is built after `init`, so a new width, a new plane and the
+  /// globe appearing cannot each grow their own copy of these three lines.
+  private func rebuildGeometry(width: CGFloat? = nil) {
+    geometry = KeyboardGeometry(
+      width: width ?? geometry.width, plane: plane, hasGlobeKey: hasGlobeKey)
     predictor = Predictor(
       matcher: ConstellationMatcher(geometry: geometry, lexicon: lexicon))
-    refresh()
   }
 
   // MARK: - Input
@@ -106,7 +237,10 @@ public final class KeyboardController {
   /// The point matters and the key does not, for letters: the key is only consulted to
   /// tell a letter from a command. Rounding the point to its key here would discard the
   /// only signal the matcher runs on.
-  public func handle(_ key: Key, at point: CGPoint) {
+  public func handle(
+    _ key: Key, at point: CGPoint,
+    at time: TimeInterval = ProcessInfo.processInfo.systemUptime,
+  ) {
     switch key.role {
     case .letter(let letter):
       if plane == .letters {
@@ -114,8 +248,9 @@ public final class KeyboardController {
         word.append(neighborhood, capitalized: isShifted)
         document?.insertText(String(cased(neighborhood.literal)))
         // Shift is a one-shot: it applies to the letter that follows it and then
-        // releases, which is what the stock keyboard does.
-        if isShifted { isShifted = false }
+        // releases, which is what the stock keyboard does — except in a field that asked
+        // for `.allCharacters`, where releasing it would fight the field on every key.
+        if shift == .oneShot, traits.autocapitalization != .allCharacters { shift = .off }
       } else {
         // Digits and symbols are inserted as struck and end the word. The constellation
         // is defined over letters, so a tap on another plane is not a tap the matcher
@@ -148,15 +283,23 @@ public final class KeyboardController {
       refresh()
 
     case .shift:
-      isShifted.toggle()
+      // Two strikes inside the window latch; anything else toggles. It is the interval
+      // alone and not the state it found, because on a keyboard that auto-shift has
+      // already armed the first of the two taps turns shift *off* — and stock latches on
+      // that pair all the same, which a rule that wanted to find shift on would miss.
+      //
+      // The edge that leaves: unlatch, then strike again within the window, and it
+      // latches instead of arming a one-shot. Stock's behaviour there has not been
+      // checked, and it is not a pair of taps anyone makes on purpose.
+      let isDoubleTap = time - lastShiftTap < Self.capsLockWindow
+      lastShiftTap = time
+      shift = isDoubleTap ? .locked : (shift == .off ? .oneShot : .off)
       refresh()
 
     case .plane(let next):
       endWord()
       plane = next
-      geometry = KeyboardGeometry(width: geometry.width, plane: next)
-      predictor = Predictor(
-        matcher: ConstellationMatcher(geometry: geometry, lexicon: lexicon))
+      rebuildGeometry()
       refresh()
 
     case .nextKeyboard:
@@ -191,6 +334,7 @@ public final class KeyboardController {
   /// what precedes the cursor still ends with the letters this keyboard believes it put
   /// there, the change was its own.
   public func documentDidChange() {
+    readTraits()
     let before = document?.textBeforeInput ?? ""
     if !word.isEmpty, !before.hasSuffix(word.cased(predictor.literal(for: word))) {
       endWord()
@@ -218,7 +362,11 @@ public final class KeyboardController {
     // the text tapping it inserts. Showing "dont" over a field already holding "Dont"
     // would make the left bubble — whose whole job is "this is what you typed" — wrong
     // about the one thing it claims.
-    bar = predictor.bar(for: word).map(word.cased)
+    // A password field gets no bar. Nothing is stored either way, and PRIVACY.md is
+    // unchanged by this — but the bar is the largest type on the keyboard, and printing
+    // what someone is typing into a password field there is the one place this keyboard
+    // would be worse than the stock one to be seen using. SPEC.md section 11.2.
+    bar = traits.isSecure ? .empty : predictor.bar(for: word).map(word.cased)
     onChange?()
   }
 
@@ -231,8 +379,33 @@ public final class KeyboardController {
   /// Called only where the shift state is the keyboard's to decide — a word boundary, a
   /// delete back to nothing, a change the host made. A tap on the shift key is the
   /// user's, and nothing here overrides it.
+  private func readTraits() {
+    traits = document?.traits ?? .unspecified
+  }
+
   private func updateAutoShift() {
-    isShifted = Self.beginsASentence(document?.textBeforeInput)
+    // Caps lock is the user's, and it survives every boundary until they strike shift
+    // again. Auto-shift arms a one-shot; it does not get to cancel a latch.
+    guard shift != .locked else { return }
+    let before = document?.textBeforeInput
+    switch traits.autocapitalization {
+    case .none:
+      shift = .off
+    case .allCharacters:
+      // A field that wants every character capitalized wants exactly what caps lock is,
+      // which is also why the letter path above does not release the shift in one.
+      shift = .locked
+    case .words:
+      shift = Self.beginsAWord(before) ? .oneShot : .off
+    case .sentences:
+      shift = Self.beginsASentence(before) ? .oneShot : .off
+    }
+  }
+
+  /// Whether text arriving here would begin a word: nothing before it, or whitespace.
+  static func beginsAWord(_ before: String?) -> Bool {
+    guard let last = before?.last else { return true }
+    return last.isWhitespace
   }
 
   /// Whether text arriving here would begin a sentence.

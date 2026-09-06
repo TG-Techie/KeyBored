@@ -6,6 +6,7 @@
 //   SPEC.md section 6.3 for the commit rule these exercise end to end.
 
 import CoreGraphics
+import Foundation
 import Testing
 
 @testable import KeyBored
@@ -21,6 +22,7 @@ private final class FakeDocument: TextDocument {
   var text = ""
 
   var textBeforeInput: String? { text }
+  var traits: DocumentTraits = .unspecified
 
   func insertText(_ text: String) { self.text.append(text) }
   func deleteBackward() { if !text.isEmpty { text.removeLast() } }
@@ -43,10 +45,18 @@ private func type(_ word: String, into controller: KeyboardController) {
   }
 }
 
+/// Strikes a command key.
+///
+/// The default `time` is infinity, which reads oddly and is deliberate: the only key that
+/// looks at the clock is shift, and infinity means "no strike before this one was close
+/// enough to matter". A test that cares about the caps-lock window passes real numbers.
 @MainActor
-private func press(_ role: KeyRole, _ controller: KeyboardController) {
+private func press(
+  _ role: KeyRole, _ controller: KeyboardController,
+  at time: TimeInterval = .greatestFiniteMagnitude,
+) {
   let key = controller.geometry.keys.first { $0.role == role }!
-  controller.handle(key, at: key.center)
+  controller.handle(key, at: key.center, at: time)
 }
 
 // MARK: - Ordinary typing
@@ -265,4 +275,60 @@ private func press(_ role: KeyRole, _ controller: KeyboardController) {
   controller.handle(t, at: t.center)
   press(.space, controller)
   #expect(document.text == "Don't ")
+}
+
+// MARK: - Caps lock
+
+/// SPEC.md section 8: a double tap on shift latches, and a latch survives a word boundary.
+///
+/// This is the state a `Bool` could not hold. Before `ShiftState` existed the second tap
+/// simply undid the first, so the only way to type two capitals in a row was a field that
+/// had asked for `.allCharacters`.
+@MainActor
+@Test func aDoubleTapOnShiftLatchesAndSurvivesASpace() {
+  let (controller, document) = typing()
+  // Two strikes, on a keyboard auto-shift has already armed — which is the pair a person
+  // actually makes, and the pair the first version of this rule got wrong.
+  press(.shift, controller, at: 10.0)
+  press(.shift, controller, at: 10.1)
+  #expect(controller.shift == .locked)
+  // Real words, because a space commits through the corrector: "ab" comes back "an".
+  type("the", into: controller)
+  press(.space, controller)
+  type("cat", into: controller)
+  #expect(document.text == "THE CAT")
+}
+
+/// Two taps far enough apart are two taps, not a latch.
+@MainActor
+@Test func twoSlowTapsOnShiftAreNotACapsLock() {
+  let (controller, _) = typing()
+  press(.shift, controller, at: 10.0)  // clear the initial auto-shift
+  press(.shift, controller, at: 20.0)  // on
+  press(.shift, controller, at: 30.0)  // off again, rather than latched
+  #expect(controller.shift == .off)
+}
+
+/// A strike on a latched shift releases it, and does not immediately relatch.
+@MainActor
+@Test func strikingALatchedShiftReleasesIt() {
+  let (controller, document) = typing()
+  press(.shift, controller, at: 10.0)
+  press(.shift, controller, at: 10.1)
+  #expect(controller.shift == .locked)
+  press(.shift, controller, at: 20.0)
+  #expect(controller.shift == .off)
+  type("cat", into: controller)
+  #expect(document.text == "cat")
+}
+
+/// Auto-shift arms a one-shot at a boundary; it does not get to cancel a latch.
+@MainActor
+@Test func autoShiftDoesNotClearCapsLock() {
+  let (controller, _) = typing()
+  press(.shift, controller, at: 10.0)
+  press(.shift, controller, at: 10.1)
+  type("cat", into: controller)
+  press(.space, controller)
+  #expect(controller.shift == .locked)
 }

@@ -125,20 +125,26 @@ Section 6.3.
 
 ### 3.2 States and transitions
 
-The system as a whole is a plane, a shift flag, and a word in progress. Everything else is
+The system as a whole is a plane, a shift state, and a word in progress. Everything else is
 derived. `A` below is the auto-capitalization of section 3.4 — a fact read out of the field,
-not a remembered one.
+not a remembered one — and `s` is one of `off`, `oneShot` and `locked`.
 
-    (plane, shifted, word)  --letter tap on letters plane-->  (plane, false, word + tap)
-    (plane, shifted, word)  --letter tap on other plane-->    (plane, shifted, ∅)   text inserted as struck
-    (plane, shifted, word)  --space / return-->               (plane, A, ∅)         commit, then separator
-    (plane, shifted, word)  --delete-->                       (plane, word−1 empty ? A : shifted, word − last tap)
-    (plane, shifted, word)  --shift-->                        (plane, ¬shifted, word)
-    (plane, shifted, word)  --plane switch to p-->            (p, shifted, ∅)
-    (plane, shifted, word)  --bubble tap-->                   (plane, A, ∅)         chosen text inserted
-    (plane, shifted, word)  --host changed the field-->       (plane, A, ∅ or word)  see 3.4
+    (plane, s, word)  --letter tap on letters plane-->  (plane, s = oneShot ? off : s, word + tap)
+    (plane, s, word)  --letter tap on other plane-->    (plane, s, ∅)         text inserted as struck
+    (plane, s, word)  --space / return-->               (plane, A(s), ∅)      commit, then separator
+    (plane, s, word)  --delete-->                       (plane, word−1 empty ? A(s) : s, word − last tap)
+    (plane, s, word)  --shift, within 0.3s of the last shift-->  (plane, locked, word)
+    (plane, s, word)  --shift, otherwise-->             (plane, s = off ? oneShot : off, word)
+    (plane, s, word)  --plane switch to p-->            (p, s, ∅)
+    (plane, s, word)  --bubble tap-->                   (plane, A(s), ∅)      chosen text inserted
+    (plane, s, word)  --host changed the field-->       (plane, A(s), ∅ or word)  see 3.4
 
-Two of those are the load-bearing ones.
+`A(s)` is `s` itself when `s` is `locked`, and the field's auto-capitalization otherwise: a
+latch is the user's and no boundary clears it. A field asking for `.allCharacters` produces
+`locked` directly, which is the same state under a different cause and is why nothing in the
+letter path has to special-case that field any more.
+
+Three of those are the load-bearing ones.
 
 **A word ends at every boundary, and ending it destroys it.** There is no path from a
 committed word back to the taps that produced it. That is what makes section 3.3's
@@ -175,6 +181,13 @@ two runs cannot order equal-scoring candidates differently. *(Invariant I2.)*
 
 **A correction that changes what a bubble said it would.** The bar is cased and rendered
 from the same values the commit inserts. Section 6.
+
+**A shift that is on but not one of the two ways of being on.** `ShiftState` has three
+cases and no flag beside them. This was a `Bool` until 2026-09-05, and the state it could
+not hold was caps lock: `off` and `oneShot` both mean "not latched", `oneShot` and `locked`
+both mean "shifted", and neither pair collapses without losing the other distinction — so a
+double tap on shift undid the first tap instead of latching, and the drawn key could not
+tell the two shifted states apart either.
 
 ### 3.4 Auto-capitalization is read, never remembered
 
@@ -536,6 +549,7 @@ container app is not a mock-up: it runs the same controller and the same view.
     KeyBoredTests/MatcherTests.swift    the matcher, by invariant
     KeyBoredTests/KeyboardControllerTests.swift  the routing, end to end
     KeyBoredTests/KeyboardViewTests.swift        what the keyboard draws, not just computes
+    KeyBoredTests/StockLikenessTests.swift       geometry and colour against Appendix A
 
 Measured behaviour, from the tests rather than from reading the code:
 
@@ -554,6 +568,12 @@ Measured behaviour, from the tests rather than from reading the code:
 - The same taps give the same answer across eight fresh matchers. *(I1)*
 - Shift starts on and releases after one letter; delete walks the word back a tap at a
   time; switching to the digits plane ends the word and types literally.
+- Two taps on shift inside 0.3s latch it, and the latch survives a space; two taps ten
+  seconds apart do not latch; a tap on a latched shift releases it without relatching.
+- Each of the three shift states draws a glyph, and all three glyphs resolve to an image
+  on this SDK — the failure mode of a wrong symbol name is a blank key, not an error.
+- Holding delete repeats it, waits before the first repeat, and stops on release.
+- Every command cap answers to a touch anywhere inside it, not only at its centre.
 - Emptying the field from outside the keyboard re-arms the capital, and the keyboard's own
   insertions do not disturb the word in progress even though the host reports both the same
   way. Section 3.4.
@@ -621,6 +641,26 @@ only in the same breath as Full Access, since without it the group buys nothing.
 
 ### Open
 
+9. **Stock's caps are slightly translucent and these are painted.** The same stock cap
+   reads `#404041` over the Contacts list and `#3D3D3D` over a Safari page; ours reads
+   `#404041` over both. Three units on one channel, for a structural change: drawing on a
+   `UIInputView` with the `.keyboard` style instead of on a plate we paint. Appendix A.6
+   has the measurement.
+10. **Delete repeats but does not accelerate.** Stock waits about four tenths of a second,
+    repeats about ten times a second, and after a few seconds starts taking whole words.
+    This does the first two. The third has not been timed off a stock keyboard, and
+    guessing when it kicks in would be guessing.
+11. **The caps-lock window is 0.3s and it was not measured.** It is the conventional
+    double-tap interval, not a number read off stock. `KeyboardController.capsLockWindow`.
+12. **The globe's long press has never been seen working.** It is wired the way Apple
+    documents — an invisible `UIControl` over the cap with
+    `handleInputModeList(from:with:)` on it — and nothing has raised the keyboard list on
+    a screen yet. Appendix A.8 says why a script cannot press it.
+13. **Seven of the ten return-key types have never been put in front of a stock keyboard.**
+    `.go` and `.search` draw measured glyphs; `.default` draws a measured `↵`. The other
+    seven draw their words, because a symbol name that looks right in the source is not
+    evidence. Appendix A.5.
+
 1. **Does the keyboard learn words you type?** A keyboard that adapts is not mechanistically
    predictable unless what it learned is visible and editable, and storing it across app and
    extension needs Full Access. This is a question about what kind of product KeyBored is,
@@ -648,23 +688,156 @@ here so that overturning one is an argument rather than a guess.
 
 ---
 
+## 11. The system keyboard API, and what this keyboard does by hand
+
+Read on 2026-09-05 out of the iOS 26.5 SDK headers on this machine, not out of the archived
+Extensibility guide Appendix B cites and not out of anyone's recollection of UIKit:
+
+    $(xcrun --sdk iphoneos --show-sdk-path)/System/Library/Frameworks/UIKit.framework/Headers/
+      UIInputViewController.h   UIInputView.h   UITextInputTraits.h   UITextInput.h   UILexicon.h
+
+Headers rather than the documentation website because they carry the exact declarations and
+the availability annotations, and because they are the version this project actually links
+against. Where a claim below is about behaviour rather than about a declaration, it says so.
+
+The survey exists because everything in sections 4 and 9 was derived by measuring a
+screenshot. Measuring is how the geometry got right; it is also why the keyboard drew a
+plate colour it could have been handed and inferred a capital the field would have told it.
+
+### 11.1 The inheritance nobody had looked up
+
+`UITextDocumentProxy` inherits `UIKeyInput`, and `UIKeyInput` inherits `UITextInputTraits`:
+
+    @protocol UITextDocumentProxy <UIKeyInput>
+    @protocol UIKeyInput <UITextInputTraits>
+
+So the field being typed into can be asked what it wants, through the proxy this keyboard
+already holds. **Every member of `UITextInputTraits` is `@optional`**, which Swift imports as
+an optional: `proxy.keyboardAppearance` has type `UIKeyboardAppearance?`, not
+`UIKeyboardAppearance`. A `nil` is a real outcome and not an error, so each of these needs a
+stated fallback rather than a `!`. Verified by type-checking against the iOS 26.0 target.
+
+### 11.2 What the system offers, and what this keyboard was doing instead
+
+| API | This keyboard, before the survey | Decision |
+|---|---|---|
+| `keyboardAppearance` | drew from `traitCollection.userInterfaceStyle` | **proposed, implemented, and rejected by measurement.** See 11.3. The trait collection keeps the decision. |
+| `autocapitalizationType` | inferred `.sentences` by reading text back (§3.4) | the field's declared intent leads; the read-back is how `.sentences` is *implemented*, and `.none`, `.words` and `.allCharacters` are its own answers. |
+| `returnKeyType` | the word "return", always | label from the type: Go, Search, Send, Done, Next, Join, Continue. |
+| `keyboardType` | QWERTY, always | a field asking for `.numberPad` and getting letters is a correctness bug. At minimum open on the digits plane for the numeric types; a real number pad is out of scope and recorded as such. |
+| `isSecureTextEntry` | ignored | **the candidate bar would print a password in 40pt type.** Nothing is stored — PRIVACY.md still holds — but it is on screen. The bar is suppressed for a secure field. |
+| `enablesReturnKeyAutomatically` | ignored | return is disabled while the document is empty. |
+| `selectedText` (iOS 11) | ignored | a selection means the next insert replaces it, so the word in progress no longer describes the field. |
+| `documentIdentifier` (iOS 11) | ignored | changes when the host moves to a *different field*, which is the one thing §3.4's suffix comparison cannot detect at all — it compares text, and two fields can hold the same text. It complements that check rather than replacing it. Recorded, not yet used. |
+| `documentInputMode` (iOS 10) | ignored | the field's own language. Recorded, not used: the lexicon is English-only. |
+| `setMarkedText:selectedRange:` / `unmarkText` (iOS 13) | ignored | provisional text, underlined, replaced on commit — the mechanism a prediction could use instead of insert-then-delete. Out of scope for now, recorded because §6.3's delete-and-reinsert is the thing it would replace. |
+| `hasText` (UIKeyInput) | ignored | cheaper than reading the context back. |
+| `adjustTextPositionByCharacterOffset:` | ignored | no cursor keys, so nothing needs it. |
+| `UIInputView(frame:inputViewStyle:)` with `.keyboard` | a plain `UIView` with a hand-mixed plate colour | "mimics the keyboard background", per the header's own comment. The sampled colours stay as the fallback and as what the container app draws. |
+| `UIInputView.allowsSelfSizing` (iOS 9) | a height constraint activated in `viewDidAppear` | the supported way to let autolayout size the input view. The workaround in `KeyboardViewController` exists because nobody had read this. |
+| `handleInputModeListFromView:withEvent:` (iOS 10) | `advanceToNextInputMode` only | that is a tap; this is the long press that shows the keyboard list. Both, as the stock globe key does. |
+| `hasDictationKey` | ignored | whether the host wants a dictation key drawn. |
+| `hasFullAccess` (iOS 11) | ignored | this keyboard requires none; asserting it is how PRIVACY.md's claim gets a runtime check rather than a promise. |
+| `needsInputModeSwitchKey` | used, correctly | unchanged. |
+| `primaryLanguage`, `dismissKeyboard` | ignored | recorded; neither is needed yet. |
+| `requestSupplementaryLexiconWithCompletion:` / `UILexicon` | named in `Shared/Lexicon.swift`, not called | the user's own text shortcuts. A real feature and its own piece of work. |
+
+### 11.3 The proposal the measurement rejected
+
+`keyboardAppearance` is the field's own statement of which appearance the keyboard should
+draw, and reading it instead of the view's trait collection looked like a plain correction:
+they are different questions, and a light app can legitimately want a dark keyboard.
+
+It was implemented, and it turned the keyboard white inside a black app.
+
+Measured on a simulator in dark mode, 2026-09-05, in Safari's address bar:
+
+    textDocumentProxy.keyboardAppearance   = Optional(2)   // .light
+    traitCollection.userInterfaceStyle     = 2             // .dark
+
+and a screenshot of **the stock keyboard in that same field**, taken minutes later by
+switching to it with the globe: dark. So the field says `.light`, and Apple's own keyboard
+does not obey it.
+
+The reading, and it is a derivation: `.light` predates dark mode by six years, apps set it
+once and never revisited it, and the system stopped treating it as authoritative. The trait
+collection therefore keeps the decision, and `overrideUserInterfaceStyle` stays
+`.unspecified` — which is where the code started, but now because it was checked rather than
+because nobody had asked.
+
+**Not established:** whether a field asking for `.dark` inside a light app is honoured by
+stock. That is the case where the trait would carry real information, and no field doing it
+has been found to test against. If one is, this is the paragraph to replace.
+
+This section exists because the survey's value is not only the things it changed. A change
+that looks obviously right, is cheap to make, and is wrong is exactly what a survey read out
+of headers rather than out of behaviour produces — and the only thing that caught it was
+putting the two keyboards side by side in the same field.
+
+### 11.4 The 40 points of dead space, and where they came from
+
+`StockMetrics.bottomRowHeight` reserved 47 points for "the row below `return` carrying the
+globe key". There is no such row on the stock keyboard: iOS draws its own globe and dictation
+strip *below* a custom keyboard's input view, and stock puts its emoji key **inside** row 4,
+between `123` and the space bar. When `needsInputModeSwitchKey` is false the reserved row is
+simply empty, which is what Jonah photographed on 2026-09-05.
+
+Measured from that photograph against a stock keyboard in the same field, both at 3x:
+
+    row 4 bottom to the keyboard's bottom     BoreKey 142px (47pt)    stock 22px (7.3pt)
+    whole plate                               BoreKey 1110px (370pt)  stock 991px (330pt)
+    cap height, row pitch, every cap x        identical within 1px
+    plate top to row 1 top                    105px vs 106px
+
+So the geometry was right and the total was 40 points too tall, all of it below the last row.
+`bottomRowHeight` is replaced by a measured 22/3 points of bottom padding, and the globe key,
+when the system asks for one, takes stock's emoji slot in row 4.
+
+**A recorded divergence:** with no globe key needed, stock still shows an emoji key there and
+this keyboard shows a wider `123`. Our `planeKeyWidthFraction` of 299/1290 is exactly stock's
+`123` (140px) plus the 18px gap plus its emoji key (141px), so the slot is available. It is
+left unfilled because switching to the emoji keyboard is an input-mode change, which only
+`advanceToNextInputMode` and `handleInputModeList` can make and only when
+`needsInputModeSwitchKey` is true. A key that looked like stock's and did nothing would be
+worse than a wider `123`.
+
+### 11.5 Also measured from the same pair of screenshots
+
+    cap corner radius     stock 21px (7pt)      BoreKey 13px (4.3pt)
+    space bar             stock blank, with a small dictation "A" at its right end
+    return key            stock draws the glyph; this keyboard printed the word
+    shift glyph           stock's is a heavier outlined arrow
+    candidate bar         stock: dimmed text, hairline dividers, Siri and formatting
+                          affordances at the ends; ours: three candidates at full glyph weight
+
+The Siri and formatting affordances belong to the system and are not reproduced. The dimming,
+the dividers and the slot alignment are what make the bar read as part of the keyboard, and
+those are ours to match.
+
+---
+
 ## Appendix A — measured stock geometry
 
 Measured 2026-09-05 from a screenshot of the stock iOS keyboard on an iPhone 15 Pro Max, by
 thresholding key caps at RGB > 246 and scanning for runs of light pixels. The screenshot is
 not in this repository; the numbers below are the part of it that mattered.
 
-**This is a screenshot, not a device measurement.** The proportions are real; the absolute
-point values are derived by dividing by 3 and still want checking against a simulator or a
-device. The tests assert the built geometry against the pixel figures below, so the
-relationship can be re-derived without the image.
+**This was a screenshot, not a device measurement**, and it was the only one for a while.
+Section A.3 is the pass that checked it against running stock keyboards on three simulator
+sizes, and found the horizontal fractions right and one of the vertical numbers wrong. Where
+the two disagree, A.3 wins and says why.
+
+The tests assert the built geometry against the pixel figures below, so the relationship can
+be re-derived without the image.
 
 Device: iPhone 15 Pro Max, 1290 × 2796 px, @3x, so 430 × 932 pt.
 
 Pixels, as measured:
 
     keyboard plate top edge          y = 1807 (hairline separator at 1805–1806)
-    suggestion strip                 y = 1807 … 1910          height 104
+    suggestion strip                 y = 1807 … 1910          height 104   (but see A.3:
+                                     the strip is 156, and 52 of it is the band iOS draws
+                                     above a custom keyboard's own input view)
     row 1  Q W E R T Y U I O P       y = 1911 … 2045          height 135
     row 2  A S D F G H J K L         y = 2079 … 2213          height 135
     row 3  ⇧ Z X C V B N M ⌫         y = 2247 … 2381          height 135
@@ -686,6 +859,258 @@ Derived points (÷3), to be verified before use:
 The measurement script was scratch and is not kept. The numbers above are the record, and
 the geometry tests check the code against them on every run, which is a stronger guarantee
 than a retained script would be.
+
+### A.2 — the number and symbol planes
+
+Measured 2026-09-05 off the stock English keyboard in Safari's URL field on an iPhone 17 Pro
+simulator, captured with `xcrun simctl io booted screenshot` at 1206 × 2622 px, @3x, so
+402 pt wide. A different device from the measurements above, so the pixel figures are not
+directly comparable with them — the proportions are, and they agree.
+
+The characters, which are the part that was wrong:
+
+    numbers  1 2 3 4 5 6 7 8 9 0
+             - / : ; ( ) $ & @ "          ← the closing quote
+             #+=  . , ? ! '  ⌫
+             ABC  space  return
+
+    symbols  [ ] { } # % ^ * + =
+             _ \ | ~ < > € £ ¥ •          ← the bullet, U+2022
+             123  . , ? ! '  ⌫
+             ABC  space  return
+
+Both second rows are **ten** keys, and both land on the same grid as the row above them —
+neither is inset by half a column pitch the way the letters plane's `asdfghjkl` is. KeyBored
+0.0.3 shipped nine glyphs in each, and the missing tenth is what pushed the row into the
+letters plane's offset.
+
+Pixels, as measured, identical on both planes:
+
+    row 0   10 caps   x 20-119, 138-238, … 1086-1186     width 100/101, pitch 118.5
+    row 1   10 caps   x 20-119, 138-238, … 1086-1186     identical to row 0
+    row 2    7 caps   #+= 20-155 (136), five of 148 running x 197-344 … 861-1008,
+                      ⌫ 1050-1186 (137)
+    row 3    3 caps   ABC 20-297 (278), space 316-889 (574), return 908-1186 (279)
+
+The five punctuation caps are not on the letter grid. They occupy **exactly** the span the
+letters plane's `z`…`m` occupy in the same capture — x 197 to 1008, 812 px — divided five
+ways instead of seven, which is where the 148 px comes from against a letter's 101. That
+span is `7 × keyWidth + 6 × gap`, and stating it that way is what the geometry does, so the
+three planes cannot drift apart.
+
+Row 3 carries no emoji key here because a custom keyboard is installed, so iOS draws its own
+globe and dictation strip below the keyboard and stock drops the slot. That is the same
+observation as section 11.4, arriving from the other side.
+
+Thresholding under-reports a cap by a pixel or so at each edge, because the antialiased
+rounded corner falls below the cut. The figures above are the raw scan; the tests assert the
+computed geometry, which comes out about 1.5 px wider on each cap and is not a disagreement.
+
+### A.3 — the vertical metrics, checked against three running simulators
+
+Everything above came off one screenshot of one phone. On 2026-09-05 the stock keyboard was
+put in a Contacts search field on three simulators and measured the same way, to find out
+which of those numbers were properties of the keyboard and which were properties of that
+phone.
+
+    device              width    cap height    row pitch    strip    row 0 top
+    iPhone 17e          390 pt      129 px       162 px     156 px     1683
+    iPhone 17 Pro       402 pt      129 px       162 px     156 px     1773
+    iPhone 17 Pro Max   440 pt      135 px       168 px     156 px     1989
+    (Appendix A above)  430 pt      135 px       168 px       —          —
+
+Three findings, and the third is the one that cost the afternoon.
+
+**The horizontal fractions are right.** Every one of them lands within about a pixel and a
+half at all three widths, which is the width of the antialiased cap edge the threshold does
+not count. Side margin 20, column gap 18, shift 144, delete 145, `123` 299, return 300, all
+over 1290 — they scale.
+
+**The gap between rows and the strip above them are constants**, 33px and 156px, identical
+on all three. So "vertical values are in points, not fractions" holds for those.
+
+**The cap height is not one number.** It is 129px on the two smaller phones and 135px on the
+larger one, and the 135 in Appendix A was measured on a 430pt phone and written down as
+though it were universal. It is 6px per row too tall on anything narrower, which is 24px of
+keyboard, and it is why this keyboard read as slightly oversized in every side-by-side taken
+on a simulator. `StockMetrics.rowHeight(forWidth:)` now carries both values.
+
+**The boundary between them is a guess.** Nothing was measured between 402pt and 430pt. The
+code puts it at 414, which is the width of the older Plus and Max phones and so the same
+class boundary Apple has drawn before. A device in that gap would settle it.
+
+**The strip is 156px, not 104.** The 104 in Appendix A is the part of it a custom keyboard
+draws inside its own input view. iOS draws the other 52 above that view, and measuring only
+our half is what put the first key row too high.
+
+**Thirteen pixels at the bottom are not available.** Stock's plate runs y 1617–2410 on the
+402pt simulator. A custom keyboard's input view has its bottom pinned at 2397 whatever
+height it asks for: 765 put its top at 1632, 793 put its top at 1604, and both ended at
+2397. iOS keeps those 13px for its own globe and dictation strip; stock's plate simply draws
+over them. So this keyboard asks for stock's height less 13, which puts all four key rows
+exactly on stock's and gives up the bottom sliver of plate instead. `systemBottomInset` in
+`KeyboardViewController` is that number, and it was measured on one device only.
+
+### A.4 — the palette, measured in the same capture as the thing it is compared to
+
+A colour read out of one screenshot and rendered back through another pipeline is not a
+measurement of a difference: the two pipelines differ by a few units on their own. The stock
+column below was sampled with `pick.swift` out of `xcrun simctl io screenshot` captures of a
+stock keyboard, in Safari and in Contacts, on the iPhone 17 Pro simulator. Our own render
+reads back byte-exact through the same capture path, so a difference against this column is
+a real difference and not the pipeline. The 0.0.3 column is not a measurement at all — it is
+the constant that shipped, read out of `git show 48d00d2:Shared/KeyboardView.swift` and
+converted to hex, which is why it is exact.
+
+    dark               stock       KeyBored 0.0.3 as shipped
+    plate              #1B1B1D     #1F1F1F
+    every cap          #404041     #434343
+    action return      #007AFF     — no action fill at all
+    bar rules          #323234     — 0.0.3 drew no rules at all
+
+    light              stock       KeyBored 0.0.3 as shipped
+    plate              #DFE0E6     #D1D6DB
+    letter cap         #FFFFFF     #FFFFFF
+    command cap        #FFFFFF     #ABB3BD
+    action return      #007AFF     — no action fill at all
+
+    light bar rule     #B8B8B8     — 0.0.3 drew no rules at all
+
+The bar rules are 3px wide and 72px tall in both appearances, measured in an empty Contacts
+search field: dark draws them at x 399–401, light at x 400–402, and in the light capture the
+rule runs y 1659–1730, which is 72 rows exactly. The light grey `#B8B8B8` had been chosen
+before it was measured and turned out to be the right value; it is now a reading.
+
+The light capture also settles the cap question directly rather than by inference from the
+dark one. In `lt-c2.png` the `Q` cap, the shift cap, the delete cap, the `123` cap and the
+space bar all read `#FFFFFF`, and the return key reads `#007AFF`.
+
+**There is one cap colour, and iOS 26 uses it for every key.** Not just in dark, where that
+had already been noticed, but in light too — shift, delete, `123` and the space bar are the
+same white as a letter. The `letterKeyColor` / `commandKeyColor` pair carried the older iOS
+arrangement and has been collapsed into `capColor`, because two names for one colour is an
+invitation to re-diverge them.
+
+**The return key is the exception, and it is blue in both appearances.** `#007AFF` exactly,
+which is `systemBlue`'s light value; stock does not switch to the dark one.
+
+**Stock's caps are slightly translucent and ours are not.** The same stock cap read `#404041`
+over Safari and `#3D3D3D` over the black Contacts list. This is recorded and not fixed: the
+values above are the Safari ones, and matching the material properly means drawing on a
+`UIInputView` with the `.keyboard` style rather than on a painted plate. Section 10 carries
+it as an open question.
+
+### A.5 — what stock draws on the return key
+
+iOS 26 draws glyphs where earlier iOS drew words, and two of them were measured directly:
+
+    field                          returnKeyType    stock draws
+    Safari address bar             .go              a right arrow, white on #007AFF
+    Contacts search field          .search          a magnifier, white on #007AFF
+    an ordinary text field         .default         ↵, on the ordinary cap colour
+
+The other seven cases of `UIReturnKeyType` were not put in front of a stock keyboard, so the
+keyboard draws their words on the blue cap and `KeyboardView.returnKeySymbol` says plainly
+that guessing a symbol name for them is the kind of thing that looks right in the source and
+wrong on a phone.
+
+**Stock does not dim the action key on an empty field**, and the note that said it did was
+wrong. One early capture (`c3.png`) showed the search key grey at `#747474` over an empty
+Contacts field, which read as `enablesReturnKeyAutomatically`. Going back deliberately did
+not reproduce it: Contacts light and Contacts dark both read `#007AFF` on an empty field,
+and Safari's `.go` key read `#007AFF` both with `https://example.com` in the bar and after
+clearing it to the bare placeholder. The grey was a frame of the keyboard's presentation
+animation, caught by a screenshot taken too early. Nothing to implement, and one fewer
+open question.
+
+
+### A.6 — the cap itself, ours beside stock in one pipeline
+
+The two earlier findings about the cap — that stock's corner is 22px against our 16 or 17,
+and that stock's cap is translucent where ours is opaque — both came from comparing a stock
+screenshot against a render measured with a different threshold. Redone properly, with the
+same tool, the same cut, the same appearance and the same host app, they do not survive.
+
+Stock is `dk-c3.png`: Contacts, dark, stock keyboard. Ours is `app-dk1.png`: the container
+app drawing the same `KeyboardView`, dark, minutes later. Both `xcrun simctl io screenshot`
+on the iPhone 17 Pro simulator. The `Q` cap, flooded from a point inside it at a luminance
+cut of 45:
+
+    measurement                     stock          KeyBored
+    cap box                         101 x 127      101 x 127
+    left-edge inset at dy 0..15     13 11 9 8 7 5 5 4 3 3 2 2 1 1 1 0   (identical)
+    cap fill                        #404041        #404041
+    plate                           #1B1B1D        #1B1B1D
+
+Sixteen rows of corner profile, the same in both. `capCornerRadius` at 7pt is right, and the
+"stock 22 vs ours 16" was two thresholds, not two corners. The cap colour is byte-equal in
+the same host.
+
+**The translucency is real but it is three units.** The same stock cap reads `#404041` over
+the Contacts list and `#3D3D3D` over a Safari page; ours reads `#404041` over both, because
+it is a painted opaque cap. That is a 3/255 difference on one channel, against a backdrop
+change large enough to be the whole screen. It stays in section 10 as a known divergence
+rather than as work: fixing it means drawing on a `UIInputView` with the `.keyboard` style
+instead of on a plate we paint, which is a structural change, and the payoff is three units.
+
+### A.7 — the bottom row does not change with the field
+
+The note this appendix inherited said stock's URL keyboard lays out its bottom row as `123`
+/ space 545 / `.` 100 / return 190 in a 1206px capture, against our 279 / 575 / 280 — a
+period key we do not draw and three widths that are all wrong.
+
+That is not what iOS 26 does. Scanned across the bottom row of two stock captures taken on
+2026-09-05, one in Safari's address bar (`.URL`, `.go`) and one in a Contacts search field
+(`.default`, `.search`):
+
+    key        Safari .URL     Contacts .default    KeyBored
+    123        x 19-297        x 19-297             x 19-297
+    space      x 315-889       x 315-889            x 315-889
+    return     x 907-1186      x 907-1186           x 907-1186
+
+The same three keys at the same three spans in all three, and no period key in either stock
+row. Whatever iOS the original note described, this one lays the bottom row out the same way
+whatever the field asked for, and this keyboard already matches it to the pixel. Nothing to
+implement; the open question is closed by measurement rather than by code.
+
+### A.8 — three things stock does that this keyboard now does too
+
+Added 2026-09-05, after the geometry and the palette were settled and what was left was
+behaviour.
+
+**Caps lock.** A second strike on shift within 0.3s latches it; the latched key draws
+`capslock.fill`, a barred arrow, where the one-shot draws `shift.fill`. Section 3.2 has the
+transitions and section 3.3 says why `ShiftState` has three cases rather than a flag. The
+0.3s is the conventional double-tap interval and was not timed off a stock keyboard;
+section 10 carries it as a tunable.
+
+**Delete repeats while it is held.** 0.4s to the first repeat, then one every 0.1s, on a
+run-loop timer in the common modes so that a tracking run loop does not stop delivering it.
+Stock also accelerates into whole words after a few seconds and this does not; section 10.
+
+**The globe raises the keyboard list on a long press.** `handleInputModeList(from:with:)` is
+the only route iOS gives to that list, and it wants a `UIControl` and the event UIKit hands
+a control — neither of which a plate that hit-tests its own touches can supply. So the globe
+cap carries an invisible `UIControl` on top of it and the extension puts that selector on
+it, which also handles the short tap; `advanceToNextInputMode()` is no longer called by
+hand. The container app never wires it, and its control stays inert.
+
+**How each was checked, since none of them could be tapped from a script.** A System Events
+click reaches the simulator through the accessibility layer: it lands only on elements the
+app exposes, and it lands at their centre. Shift, delete, the globe and the space bar drew
+images or nothing, exposed nothing, and swallowed every click aimed at them — which reads
+exactly like a keyboard whose bottom two rows are dead, and cost most of an evening before
+`123` was tried and worked because it draws text. Every cap now carries an
+`accessibilityLabel` and the `.keyboardKey` trait, which is what stock does and what
+VoiceOver needs, and which was missing entirely for half the keyboard.
+
+So: caps lock's transitions are covered by four controller tests over the real clock path;
+its appearance by a render of the latched keyboard written to the simulator's Documents
+directory as `keyboard-capslock.png`, looked at rather than asserted; the delete repeat by a
+test that holds the key with the repeat shortened forty-fold; and every command cap by a
+test that hit-tests each of its four corners rather than its centre. The globe's long press
+is the one thing here with no artifact behind it: it is wired the way Apple documents and
+has not been seen working.
 
 ## Appendix B — sources
 

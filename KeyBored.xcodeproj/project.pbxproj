@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */; };
 		09DC17C4EE08C8F8DC4CDC0B /* 12dicts-3esl-lowercase.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */; };
 		0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */; };
 		17C497CFD4CD282A3328723F /* KeyBoredVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */; };
@@ -94,6 +95,7 @@
 		63D19F82651FDDD5CE4BFE99 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardViewTests.swift; sourceTree = "<group>"; };
 		81222902FB2FAA2B91476168 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StockLikenessTests.swift; sourceTree = "<group>"; };
 		95610C2A24233305E18A020D /* ConstellationMatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConstellationMatcher.swift; sourceTree = "<group>"; };
 		9CAA812943042554AF9A7D9C /* 12dicts-3esl-lowercase.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "12dicts-3esl-lowercase.txt"; sourceTree = "<group>"; };
 		9DBFEC4FFCC1BD393BB0F0B1 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 				6E0F0591CF16C034BCB5740F /* KeyboardViewTests.swift */,
 				A410CF5E51BCA0119DF23F26 /* KeyBoredVersionTests.swift */,
 				E73F1B03A26150D8A2D93A34 /* MatcherTests.swift */,
+				92E192D7BDC311E08E070B43 /* StockLikenessTests.swift */,
 			);
 			path = KeyBoredTests;
 			sourceTree = "<group>";
@@ -346,6 +349,7 @@
 				FCA71C15C96B8311B51AA6BB /* KeyboardViewTests.swift in Sources */,
 				1D52AB0B7EB2884F1E2553B5 /* Lexicon.swift in Sources */,
 				0D244ECE4DD3951017440B40 /* MatcherTests.swift in Sources */,
+				071B4B5C713E5CD5E94B537A /* StockLikenessTests.swift in Sources */,
 				55003D375D00F0909CD20AB6 /* TypingSession.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

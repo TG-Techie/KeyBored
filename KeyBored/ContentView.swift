@@ -56,14 +56,20 @@ final class TryItViewController: UIViewController {
       keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
       keyboardView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-      keyboardView.heightAnchor.constraint(equalToConstant: StockMetrics.totalHeight),
+      keyboardHeight,
     ])
   }
+
+  /// Updated in `viewDidLayoutSubviews`, because the height stock draws depends on how
+  /// wide the phone is. See `StockMetrics.rowHeight(forWidth:)`.
+  private lazy var keyboardHeight = keyboardView.heightAnchor.constraint(
+    equalToConstant: StockMetrics.totalHeight(forWidth: UIScreen.main.bounds.width))
 
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
     let width = keyboardView.bounds.width
     guard width > 0 else { return }
+    keyboardHeight.constant = StockMetrics.totalHeight(forWidth: width)
     if controller == nil {
       controller = KeyboardController(
         width: width, lexicon: EnglishLexicon.make(), document: TextViewDocument(textView))
@@ -97,6 +103,11 @@ private final class TextViewDocument: TextDocument {
   }
 
   var textBeforeInput: String? { textView.text }
+
+  /// A plain text view carries no `UITextInputTraits` worth reporting, and the try-it
+  /// surface is deliberately an ordinary field. `.unspecified` is the honest answer, and
+  /// it is also what exercises every default the extension falls back to.
+  var traits: DocumentTraits { .unspecified }
 
   func insertText(_ text: String) {
     textView.text.append(text)

@@ -36,6 +36,7 @@ private final class SinkDocument: TextDocument {
   }
 
   var textBeforeInput: String? { sink.text }
+  var traits: DocumentTraits = .unspecified
 
   func insertText(_ text: String) { sink.text.append(text) }
   func deleteBackward() { if !sink.text.isEmpty { sink.text.removeLast() } }
@@ -87,11 +88,14 @@ private func contrast(_ one: UIColor, _ other: UIColor) -> CGFloat {
     let traits = UITraitCollection(userInterfaceStyle: style)
     let text = KeyboardView.keyTextColor.resolvedColor(with: traits)
 
-    for background in [KeyboardView.letterKeyColor, KeyboardView.commandKeyColor,
-                       KeyboardView.pressedKeyColor] {
+    for background in [KeyboardView.capColor, KeyboardView.pressedKeyColor] {
       let cap = background.resolvedColor(with: traits)
       #expect(contrast(text, cap) >= 4.5)
     }
+
+    // The action return key carries its own foreground because it carries its own fill,
+    // and it is the same blue in both appearances, so it has to be legible in both.
+    #expect(contrast(.white, KeyboardView.actionKeyColor) >= 3.0)
 
     let bar = KeyboardView.barTextColor.resolvedColor(with: traits)
     let plate = KeyboardView.plateColor.resolvedColor(with: traits)
@@ -107,8 +111,7 @@ private func contrast(_ one: UIColor, _ other: UIColor) -> CGFloat {
   for style in [UIUserInterfaceStyle.light, .dark] {
     let traits = UITraitCollection(userInterfaceStyle: style)
     let plate = KeyboardView.plateColor.resolvedColor(with: traits)
-    #expect(contrast(plate, KeyboardView.letterKeyColor.resolvedColor(with: traits)) >= 1.2)
-    #expect(contrast(plate, KeyboardView.commandKeyColor.resolvedColor(with: traits)) >= 1.2)
+    #expect(contrast(plate, KeyboardView.capColor.resolvedColor(with: traits)) >= 1.2)
   }
 }
 
@@ -122,6 +125,7 @@ private final class HostEditableDocument: TextDocument {
   var text = ""
 
   var textBeforeInput: String? { text }
+  var traits: DocumentTraits = .unspecified
   func insertText(_ text: String) { self.text.append(text) }
   func deleteBackward() { if !text.isEmpty { text.removeLast() } }
 }
