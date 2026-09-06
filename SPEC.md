@@ -527,6 +527,30 @@ fresh, shifted keyboard. Fixture realism is not decoration. It is what lets a te
 something nobody was looking for. Prefer fixtures that do what a person does over fixtures
 that are convenient to assert against.
 
+### 8.1a A differential is only as complete as the state space it samples
+
+Every side-by-side taken on this project in its first week was taken with the keyboard in
+**one shift state**, and every one of them read as exhaustive: two keyboards, the same field,
+the same device, the same capture, measured to the pixel. A defect that exists only in the
+other state was invisible to all of them.
+
+That is what A.32 was. The letter cap was set at one point size, which happened to be exactly
+stock's minuscule, so the unshifted keyboard measured perfect and the shifted one was 15%
+oversized. Jonah found it by sending a shifted screenshot; no method we were running could
+have.
+
+It is the same shape as four earlier misses recorded elsewhere in this document — measuring
+stock against stock (A.9), a rounding compared against itself, a hardware-keyboard setting
+that silenced the software one, a two-second hold that measured iOS's own long-press gesture
+rather than the pressed cap. In each of them the comparison was sound and the *set of states
+it ran over* was not.
+
+**So a differential carries the state space it sampled, and says so.** The rest of this
+document's comparisons inherit the same hole and are marked where they sit: the pressed
+state, the number and symbol planes, and the key preview were all measured unshifted, and
+A.23 and A.25 should not be read as covering the shifted keyboard. Nothing about them is
+known to be wrong; nothing about them has been looked at.
+
 ### 8.2 A label's frame is not where its ink is
 
 Recorded because it has now put text in the wrong place twice in one morning, in two
@@ -555,7 +579,10 @@ font's own metrics, which is why the error is a plausible-looking handful of pix
 than something obviously wrong.
 
 The preview's letter is in Appendix A.19 and the space bar's mark in A.21, both with
-the before-and-after positions.
+the before-and-after positions. **The third time was the letter on a cap**, A.33, and it
+carries the part the first two did not reach: a label whose font changes has to be laid out
+again, because the frame that puts one font's ink in the right place puts another's
+somewhere else.
 
 ---
 
@@ -2576,6 +2603,58 @@ follow from the point size moved.
 **Not measured:** what stock does with punctuation caps, which this draws at the title's 18pt;
 and what it does with a script whose letters have no case, which this draws at the minuscule's
 size because `Character.isUppercase` answers false for them.
+
+### A.33 — the letter sits on stock's baseline, and a font change is a layout change
+
+Jonah, 2026-09-06 at 14:26 on 0.0.14, verbatim: "The verticla oddaetnisnstillcalifhtlynoff".
+He did not say which glyph, so both were measured, in all four states, on the 402pt
+simulator in the same Contacts search field, stock and ours:
+
+| | stock ink | ours at 0.0.14 |
+|---|---|---|
+| capital on a cap, rows 0/1/2 | 1811 / 1973 / 2135 | 1815 / 1977 / 2139 — 4px low |
+| minuscule on a cap, rows 0/1/2 | 1818 / 1980 / 2143 | 1825 / 1987 / 2150 — 7px low |
+| minuscule in a preview, row 1 | 1798 | 1798 — exact |
+| capital in a preview, row 0 | clipped, not comparable | clipped |
+
+**The preview was not the problem.** On an unclipped row its letter lands on stock's ink to
+the pixel. Row 0's preview is clipped by the top of the input view and cannot match stock by
+construction, which A.19 and A.30 already record.
+
+**Stock puts one baseline in a cap and hangs both cases from it.** The flat-bottomed `x` and
+`X` end on the same pixel — 2180 in row 2 — so a capital and a minuscule share a line. The
+baseline sits half the minuscule's x-height below the cap's centre, 20px at 3x:
+
+    device   cap height   cap centre   stock's baseline   centre + 20px
+    402 pt      129          1837            1857             1857
+    402 pt      129          2161            2181             2181
+    430 pt      135           223             243              243
+
+Neither a fraction of the cap nor an inset from an edge fits both, and the reason is A.32:
+the cap is 129px on one phone and 135px on the other while the letter's point size is the
+same on both, so the only invariant is the distance from the centre.
+
+**Two causes, and the second is the one worth carrying forward.** The label filled the cap
+and centred its line box, which is section 8.2's rule for the third time — the placement was
+a consequence of the font's ascent rather than a statement about ink, and it moved when
+A.32 gave the two cases their own sizes. That is now computed: the frame is one line tall,
+placed at `baseline - font.ascender`, the same shape the space bar's mark uses.
+
+But fixing that alone left the capital a further 1pt high, and the reason was not
+arithmetic. **`KeyCap.text` changes the font, and nothing was asking for a new layout.** The
+cap's bounds do not move when the shift key rewrites its letter, so `layoutSubviews` did not
+run and the shifted cap kept the frame that had been computed for the unshifted font. The
+setter now invalidates the layout, which is the whole fix: a label whose font is derived from
+its text has a layout that is derived from its text too.
+
+**Verified on the 402pt simulator against stock in the same field**, all three letter rows in
+both states: every row lands within one pixel, and the two states are on the same baseline as
+each other, which they were not before.
+
+**The 1px is real and is left.** Ours ends a pixel below stock on every row in both states —
+a third of a point, from where the rasterizer puts ink relative to a nominal baseline. It is
+recorded rather than tuned away, because 19/3 would make the constant match our renderer
+instead of matching the measurement, and the measurement is what the next reader needs.
 
 ## Appendix B — sources
 

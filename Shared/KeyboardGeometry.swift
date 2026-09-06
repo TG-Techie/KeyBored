@@ -335,6 +335,30 @@ public enum StockMetrics {
     text.first?.isUppercase == true ? 35.75 : 38.25
   }
 
+  /// **Where the letter's baseline sits in a cap: half the minuscule's x-height below the
+  /// cap's centre.** 20px at 3x, which is 6.67pt.
+  ///
+  /// Stock centres the *minuscule's x-height* in the cap and hangs the capital from the
+  /// same baseline, which is one rule and not two. Measured on the 402pt simulator across
+  /// all three letter rows in both shift states, and again on his 430pt capture:
+  ///
+  ///     device   cap    cap centre    stock's baseline    centre + 20px
+  ///     402 pt   129    1837          1857                1857
+  ///     402 pt   129    2161          2181                2181
+  ///     430 pt   135    223           243                 243
+  ///
+  /// **This is why it is neither a fraction of the cap nor an inset from its edge.** The
+  /// cap is 129px on one phone and 135px on the other while the letter's point size is the
+  /// same on both, so the only thing that stays constant is the offset from the centre —
+  /// a fraction fits one width and misses the other by a pixel and a half.
+  ///
+  /// A label centres its line box rather than its ink, and a line box is taller than the
+  /// glyph and not symmetric about it (section 8.2), so a label left to fill the cap puts
+  /// the baseline wherever the font's ascent happens to land. That moves with the point
+  /// size: after A.32 gave capitals and minuscules their own sizes, ours sat 4px low
+  /// shifted and 7px low unshifted, on every row. SPEC.md A.33.
+  public static let capBaselineBelowCenter: CGFloat = 20 / 3
+
   /// What stock sets everything that is not a letter in: `123`, `ABC`, `#+=` and the word
   /// on the return key. Confirmed rather than assumed — stock's `123` glyph measures 82px
   /// by 40px on both phone widths and this keyboard's measures the same 82 by 40.

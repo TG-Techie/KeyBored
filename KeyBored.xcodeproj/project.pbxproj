@@ -42,6 +42,7 @@
 		87DEF742BBA53BA8982A3747 /* HostIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */; };
 		8B7A7C650AA491E247FD2520 /* KeyBoredKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1F39B60D11993CE399ED4D4F /* KeyBoredKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		956F446154E51532EDBAB730 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 38E2A2652674A439551FCB8B /* Assets.xcassets */; };
+		967E37AE6858C7195C3987C3 /* CapLetterGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B6C1F6F6FEA66FEF493A49 /* CapLetterGeometryTests.swift */; };
 		A458EDBF9019AC8C0695D448 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = B700D6F401A5693042A7B118 /* AppIcon.icon */; };
 		AD18632A574D86BB8E01C6E4 /* KeyboardGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7D44C12690E9BB1E3E55AD /* KeyboardGeometry.swift */; };
 		AD8649BA4246460957EE60D7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29162360F13E2B650EB8AD47 /* ContentView.swift */; };
@@ -99,6 +100,7 @@
 		23A24DE2A8422D6BC208704D /* SpaceInTheConstellationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceInTheConstellationTests.swift; sourceTree = "<group>"; };
 		2400830B70778C048C3CBE28 /* KeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardController.swift; sourceTree = "<group>"; };
 		29162360F13E2B650EB8AD47 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		35B6C1F6F6FEA66FEF493A49 /* CapLetterGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapLetterGeometryTests.swift; sourceTree = "<group>"; };
 		38E2A2652674A439551FCB8B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		42206740D70CC15F5377706D /* EnglishLexicon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnglishLexicon.swift; sourceTree = "<group>"; };
 		53FEC38514862231F83B6E75 /* KeyBoredVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyBoredVersion.swift; sourceTree = "<group>"; };
@@ -191,6 +193,7 @@
 			isa = PBXGroup;
 			children = (
 				1B064B3FB2291087F41E09E7 /* BrandingTests.swift */,
+				35B6C1F6F6FEA66FEF493A49 /* CapLetterGeometryTests.swift */,
 				A342AE05DB3B619B9E775433 /* DeadZoneTests.swift */,
 				9FFC91DC7986517659093DDF /* HostIntegrationTests.swift */,
 				FB6BF0E9D31D217E675ECD65 /* KeyboardControllerTests.swift */,
@@ -356,6 +359,7 @@
 			files = (
 				7405CF3883F8DDC4979F2121 /* Branding.swift in Sources */,
 				3A2E003CE408A01E219BB967 /* BrandingTests.swift in Sources */,
+				967E37AE6858C7195C3987C3 /* CapLetterGeometryTests.swift in Sources */,
 				846F9FC4C51AAAABC71668FF /* ConstellationMatcher.swift in Sources */,
 				81A204257341AF3AB57DAF4F /* DeadZoneTests.swift in Sources */,
 				4FEE6875BD847E19741BC7B8 /* EnglishLexicon.swift in Sources */,
@@ -535,7 +539,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.14;
+				MARKETING_VERSION = 0.0.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_DISPLAY_NAME = BoreKey;
@@ -603,7 +607,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(PRODUCT_DISPLAY_NAME)";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.0.14;
+				MARKETING_VERSION = 0.0.15;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

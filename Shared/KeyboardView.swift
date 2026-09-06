@@ -1212,6 +1212,9 @@ final class KeyCap: UIView {
     set {
       label.text = newValue
       label.font = .systemFont(ofSize: StockMetrics.capTextPointSize(for: newValue ?? ""))
+      // The font decides where the label's frame goes, so changing the text relaid it out.
+      // The cap's own bounds have not moved, so nothing else would ask for this.
+      setNeedsLayout()
     }
   }
 
@@ -1251,8 +1254,8 @@ final class KeyCap: UIView {
     // *below* the plate, which no edge can produce and only a shadow can. SPEC.md A.28.
     isUserInteractionEnabled = false
     label.textAlignment = .center
-    label.frame = bounds
-    label.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    // No autoresizing mask: `layoutSubviews` places this by its baseline rather than by
+    // its frame, and a mask would fight it on every bounds change.
     addSubview(label)
     glyph.contentMode = .center
     glyph.frame = bounds
@@ -1267,6 +1270,8 @@ final class KeyCap: UIView {
 
   override func layoutSubviews() {
     super.layoutSubviews()
+    layOutLabel()
+
     // The mark sits in the bottom-right corner at stock's inset, and the inset is to the
     // *baseline*, not to the bottom of the line box. Measuring to the line box put it
     // 10px high — the descender — which is the same mistake the key preview's letter made
@@ -1278,5 +1283,31 @@ final class KeyCap: UIView {
       y: bounds.maxY - StockMetrics.spaceMarkInset - font.ascender,
       width: size.width,
       height: font.lineHeight)
+  }
+
+  /// Puts the letter's baseline where stock puts it, rather than centring a line box.
+  ///
+  /// **A label centres its line box, and a line box is not where the ink is** — SPEC.md
+  /// section 8.2, the same mistake the key preview's letter and the space bar's mark each
+  /// made once. Filling the cap with the label put the baseline wherever the font's ascent
+  /// and descent happened to leave it, which is a different place for every point size; so
+  /// the moment A.32 gave capitals and minuscules their own sizes, the two states sat at
+  /// two different heights and both of them below stock — 4px and 7px, on every row.
+  ///
+  /// Stock's baseline is `StockMetrics.capBaselineBelowCenter` under the cap's centre, and
+  /// asking for it directly is what makes the placement independent of the size rather
+  /// than a consequence of it.
+  private func layOutLabel() {
+    let font = label.font ?? .systemFont(ofSize: StockMetrics.capTextPointSize(for: ""))
+    // **The frame is exactly one line tall**, which is what makes this exact rather than
+    // nearly right. A label given a taller frame centres its line inside it, and where
+    // that centring puts the baseline is the label's business and not a number this can
+    // compute — the arithmetic for it looks obvious, and got the capital 3px high while
+    // the minuscule landed on stock exactly. At `lineHeight` there is nothing to centre
+    // and the baseline is `ascender` below the top, the same placement the space bar's
+    // mark uses a few lines up.
+    let baseline = bounds.midY + StockMetrics.capBaselineBelowCenter
+    label.frame = CGRect(
+      x: 0, y: baseline - font.ascender, width: bounds.width, height: font.lineHeight)
   }
 }
