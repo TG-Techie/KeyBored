@@ -561,4 +561,26 @@ Spent, both uploaded on 2026-09-05 and neither relabellable:
   **Verified in the hand at 402pt**, pressing `e` in Contacts' search field and capturing
   280ms into the press: the letter sits at the top of the shortened bulb, clear of the row.
 
-The tree is at 0.0.13 build 1, which is spent. Bump before archiving again.
+- **0.0.14 build 1.** Uploaded at 14:22:03 EDT on 2026-09-06 from commit `5a8689e` with a
+  clean tree, 101 tests passing. Run started 14:20:38. One change.
+
+  **A capital is not drawn at a minuscule's size.** Jonah sent two captures at 13:52 with no
+  text — stock and BoreKey 0.0.12 on his phone, both shifted. The keyboard set every letter
+  cap at 25pt, which is exactly stock's minuscule and 15% over its capital, so the unshifted
+  keyboard was right and the shifted one was oversized. Stock's four sizes are 21.75pt and
+  25pt on a cap, 35.75pt and 38.25pt in the preview; each was fitted by capturing stock and
+  this keyboard in the same field on the same simulator and stepping the size until the ink
+  measured the same, rather than by dividing a cap-height ratio out of a screenshot.
+  SPEC.md A.32.
+
+  The size now comes from the string being drawn and is assigned through `KeyCap.text`, the
+  only way to set a cap's text — the shift key rewriting every letter used to keep the font
+  the keyboard was built with, which is the half of this that a freshly-built fixture cannot
+  catch. The new test shifts.
+
+  **Verified by measurement on a 402pt simulator**, stock and ours in the same Contacts
+  search field: `E` 46px against stock's 46, `e` 40 against 40, the preview's `E` 76 against
+  76 and its `e` 61 against 61, `W`, `A`, `O`, `M`, `w` and `a` all exact. Light appearance
+  only — a point size does not vary with appearance, and nothing else changed.
+
+The tree is at 0.0.14 build 1, which is spent. Bump before archiving again.
