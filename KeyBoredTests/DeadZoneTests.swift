@@ -78,6 +78,28 @@ func everyPointOnTheKeyboardResolvesToAKey(width: CGFloat) {
     "\(unreachable.count) points do not reach the keyboard view, first \(unreachable.first.map(String.init(describing:)) ?? "-")")
 }
 
+/// The other half of the same defect, and the half no hit test can see.
+///
+/// A keyboard extension is composited by a process that decides which touches to forward
+/// by what was drawn, so a fully transparent region of this view is not reachable by a
+/// finger however the view hit-tests. That decision is made outside this process and
+/// cannot be exercised from a test, so what is asserted here is the property the fix
+/// rests on: the view fills its own bounds with something that is not transparent. If
+/// somebody sets this background to `.clear` again for tidiness, the gaps between the
+/// caps go dead again and nothing else in the suite notices. See
+/// `KeyboardView.touchableFill`.
+@MainActor
+@Test func theKeyboardFillsItsOwnBoundsSoTheGapsCanBeTouched() {
+  let view = KeyboardView(frame: CGRect(x: 0, y: 0, width: 402, height: 260))
+  guard let fill = view.backgroundColor else {
+    Issue.record("the keyboard view has no background colour at all")
+    return
+  }
+  #expect(
+    fill.cgColor.alpha > 0,
+    "the keyboard view's background is transparent, so its gaps are dead")
+}
+
 /// A document that swallows everything, so the view can be built without a host.
 private final class DeadZoneSink: TextDocument {
   var text = ""

@@ -127,6 +127,16 @@ turn a coordinate into a meaning, and the insertion, the preview and the highlig
 driven from that one answer. After it, a tap that resolves to a key and draws no preview is
 not a bug that happens to be fixed — it is a state the code cannot express.
 
+The same example carries the rule's hardest lesson, because that fix was necessary and not
+sufficient, and 0.0.6 shipped believing otherwise. A keyboard extension draws in its own
+process and is composited by another one, and the compositing process decides which touches
+to forward before any code here runs — by what was drawn. The gaps were transparent, so the
+override was answering a question it was never asked. Holistic means the whole system the
+change lives in, and the system here has two processes in it: `KeyboardView.touchableFill`
+is the same claim made to the other one. Measured, not reasoned: with no fill, six of eight
+taps across the q/w boundary arrived; with `.clear`, six of eight; with alpha 1/255, eight
+of eight, and the plate reads `#171717` either way.
+
 Granted by Jonah, pbm, 2026-09-06. His words, verbatim: "Do so Systematically and
 holistically; this needs to be an architectural, coherent change such that the keyboard
 appears to have been written correctly from the beginning, never patched  /  Approach all

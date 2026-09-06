@@ -87,6 +87,8 @@ final class KeyboardView: UIView {
     // Without this UIKit hands this view the first finger of a multi-touch sequence and
     // discards every other one, which at typing speed is most of them. See `touchesBegan`.
     isMultipleTouchEnabled = true
+    // The plate has to be drawn for the plate to be touchable. See `touchableFill`.
+    backgroundColor = Self.touchableFill
     // Inert until a host asks for it. A control with no targets would still swallow the
     // touch, and the container app's try-it keyboard has no input modes to list.
     globeControl.isUserInteractionEnabled = false
@@ -543,6 +545,14 @@ final class KeyboardView: UIView {
   /// have them. The globe is the single exception and it is a real one: the keyboard list
   /// is only reachable through `handleInputModeList(from:with:)`, which wants the touch
   /// event UIKit hands a `UIControl`, so that control keeps the touches over its own cap.
+  ///
+  /// **This override is necessary and it is not sufficient**, which cost a whole build to
+  /// learn: 0.0.6 shipped with it and the gaps were still dead. A keyboard extension's
+  /// view is drawn in this process and composited by another one, and that other process
+  /// decides which touches are worth forwarding before any code here runs. It decides by
+  /// what was drawn. A region this view leaves fully transparent is not a region a finger
+  /// can reach, so the override was answering a question it was never asked. `touchableFill`
+  /// is the other half of the fix; neither half works alone.
   override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
     guard bounds.contains(point) else { return nil }
     if globeControl.isUserInteractionEnabled, globeControl.frame.contains(point) {
@@ -734,6 +744,32 @@ final class KeyboardView: UIView {
   /// used to call unmeasurable because a static screenshot cannot show a key being held.
   /// A scripted one can: see `pressedKeyColor` below and SPEC.md Appendix A.12. Stock does
   /// lighten a cap on press in dark and darken one in light, and both are measurements.
+  /// What the keyboard fills its own plate with so that the plate can be touched.
+  ///
+  /// This is one colour with one job, and the job is not colour. A keyboard extension
+  /// draws in its own process and is composited by another one, and that other process
+  /// decides which touches to forward on the strength of what was drawn: a region left
+  /// fully transparent is never offered to this process at all, so no amount of hit
+  /// testing here can reach it. `hitTest(_:with:)` claiming every point and this fill
+  /// covering every point are the same statement made to the two halves of the system,
+  /// and the keyboard is only whole when both are made.
+  ///
+  /// Measured on the simulator, 2026-09-06, taps at x = 30, 34, 38, 40, 42, 44, 46, 50
+  /// across the q/w boundary with a probe on the first line of `hitTest`:
+  ///
+  ///     no fill        six of eight arrive; 42 and 44 never call `hitTest` at all
+  ///     `.clear`       six of eight; alpha 0 is the same as no fill
+  ///     alpha 1/255    eight of eight, `hitTest` and `touchesBegan` both
+  ///
+  /// So the alpha is the smallest an eight-bit framebuffer can hold that is not
+  /// transparent, which is the whole of the reasoning behind the number: any larger value
+  /// would be paint, and this keyboard deliberately does not paint its plate. iOS already
+  /// draws the material behind it, that material is the correct colour to within nothing
+  /// on both backdrops and in both appearances, and painting a constant over it is the
+  /// mistake `KeyboardViewController.clearThePlate` exists to undo. SPEC.md Appendix A.11
+  /// for that measurement; the black is arbitrary and only the alpha is load-bearing.
+  static let touchableFill = UIColor(white: 0, alpha: 1.0 / 255.0)
+
   static let plateColor = dynamic(
     light: UIColor(red: 0.875, green: 0.878, blue: 0.902, alpha: 1),
     dark: UIColor(red: 0.106, green: 0.106, blue: 0.114, alpha: 1),
