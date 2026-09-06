@@ -582,10 +582,26 @@ final class KeyboardView: UIView {
   private enum Target {
     case key(Key)
     case bubble(Int)
+
+    /// When this target acts. A bubble is a lift-off target for the same reason a letter
+    /// is: the finger is still free to slide off it and pick another.
+    var resolution: KeyResolution {
+      switch self {
+      case .key(let key): return key.role.resolution
+      case .bubble: return .liftOff
+      }
+    }
   }
 
-  /// Which target each finger currently down is holding, so that several can be down at
-  /// once and each is released as the thing it pressed.
+  /// Which target each finger still owing an action is holding, so that several can be
+  /// down at once and each is released as the thing it pressed.
+  ///
+  /// **Being here is what it means for a touch not to have acted yet.** A finger on a
+  /// touch-down target acts as it lands and is never recorded, so there is nothing left
+  /// for the lift to find and no second action to suppress. That is the whole guard: not
+  /// a flag beside the target that could disagree with it, but the target's own absence.
+  /// It matters most for the key that made this necessary — a plane switch rebuilds every
+  /// cap, so the key under a lifting finger is no longer the key it went down on.
   private var held: [ObjectIdentifier: Target] = [:]
 
   /// The finger the delete repeat belongs to, so that lifting a different finger does not
@@ -670,23 +686,35 @@ final class KeyboardView: UIView {
   override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
     for touch in touches {
       guard let target = target(at: touch.location(in: self)) else { continue }
-      held[ObjectIdentifier(touch)] = target
       press(target, touch: touch)
+      switch target.resolution {
+      case .touchDown: act(on: target, at: touch.location(in: self))
+      case .liftOff: held[ObjectIdentifier(touch)] = target
+      }
     }
   }
 
   override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
     for touch in touches {
-      release(touch)
+      // A finger that was still holding something is a finger that has not acted, and
+      // `release` says so by handing the target back. The lift then hit-tests afresh,
+      // because a finger that slides between keys means the one it comes up over.
+      guard release(touch) != nil else { continue }
       guard let target = target(at: touch.location(in: self)) else { continue }
-      switch target {
-      case .key(let key):
-        // The point is passed on untouched. Rounding it to the key here would throw away
-        // the only signal the matcher runs on.
-        onKey?(key, touch.location(in: self))
-      case .bubble(let slot):
-        if let text = bubbleText(slot) { onBubble?(text) }
-      }
+      act(on: target, at: touch.location(in: self))
+    }
+  }
+
+  /// What a resolved target does, in one place, so that a touch-down key and a lift-off
+  /// key differ in *when* this is called and in nothing else.
+  private func act(on target: Target, at point: CGPoint) {
+    switch target {
+    case .key(let key):
+      // The point is passed on untouched. Rounding it to the key here would throw away
+      // the only signal the matcher runs on.
+      onKey?(key, point)
+    case .bubble(let slot):
+      if let text = bubbleText(slot) { onBubble?(text) }
     }
   }
 
@@ -756,19 +784,26 @@ final class KeyboardView: UIView {
     deleteRepeat = nil
   }
 
-  /// Un-presses whatever this finger was holding and gives up its delete repeat. The key
-  /// released is the one the finger went *down* on, which is not always the one it comes
-  /// up over: a finger that slides between keys leaves the first one lit otherwise.
-  private func release(_ touch: UITouch) {
+  /// Un-presses whatever this finger was holding and gives up its delete repeat, and
+  /// hands back what it was holding. The key released is the one the finger went *down*
+  /// on, which is not always the one it comes up over: a finger that slides between keys
+  /// leaves the first one lit otherwise.
+  ///
+  /// The return value is the answer to "did this finger still owe an action" — `nil` for
+  /// one whose key already acted as it landed, and for one this view never recorded.
+  @discardableResult
+  private func release(_ touch: UITouch) -> Target? {
     let id = ObjectIdentifier(touch)
     dismissPreview(for: touch)
-    if case .key(let key)? = held.removeValue(forKey: id) {
+    let target = held.removeValue(forKey: id)
+    if case .key(let key)? = target {
       keyViews[key.id]?.backgroundColor = Self.restingColor(for: key, appearance: returnAppearance)
     }
     if deleteRepeatTouch == id {
       deleteRepeatTouch = nil
       stopDeleteRepeat()
     }
+    return target
   }
 
   // MARK: - The palette

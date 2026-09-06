@@ -206,3 +206,32 @@ private final class Sink: TextDocument {
   let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
   try image.pngData()!.write(to: directory.appendingPathComponent("keyboard-capslock.png"))
 }
+
+/// **Exactly three keys act as the finger lands, and they are the plane keys.**
+///
+/// Stated as the whole set rather than as "the plane key resolves on touch-down", because
+/// the risk this change carried was never that the plane key would fail to move — it was
+/// that the class around it would move with it. Shift, delete, the globe and the return
+/// key each have their own argument and none of them was measured, so this fails if any
+/// of them is quietly enrolled.
+///
+/// The caps are named by their labels, which is what a person pressing them sees: `123`
+/// on the letters plane, `ABC` and `#+=` on the other two.
+@Test func onlyThePlaneKeysActOnTouchDown() {
+  var earlyByPlane: [Plane: [String]] = [:]
+  for plane in [Plane.letters, .numbers, .symbols] {
+    let geometry = KeyboardGeometry(width: 402, plane: plane, hasGlobeKey: true)
+    earlyByPlane[plane] = geometry.keys
+      .filter { $0.role.resolution == .touchDown }
+      .sorted { $0.frame.minX < $1.frame.minX }
+      .map { key -> String in
+        guard case .plane(let next) = key.role else { return String(describing: key.role) }
+        return next == .letters ? "ABC" : (next == .numbers ? "123" : "#+=")
+      }
+  }
+  #expect(earlyByPlane[.letters] == ["123"], "letters plane: \(earlyByPlane[.letters] ?? [])")
+  #expect(
+    earlyByPlane[.numbers] == ["#+=", "ABC"], "numbers plane: \(earlyByPlane[.numbers] ?? [])")
+  #expect(
+    earlyByPlane[.symbols] == ["123", "ABC"], "symbols plane: \(earlyByPlane[.symbols] ?? [])")
+}

@@ -50,6 +50,42 @@ public enum KeyRole: Equatable, Sendable {
   case nextKeyboard
 }
 
+/// The moment a key's action happens: as the finger lands, or as it lifts.
+///
+/// It is a property of the role rather than a decision the touch layer makes, so that
+/// every key states its own moment once and a key cannot be made to act at both.
+public enum KeyResolution: Sendable {
+  case touchDown
+  case liftOff
+}
+
+extension KeyRole {
+  /// When this key acts.
+  ///
+  /// **Lift-off is the default, and the reason is the letters.** While a finger is down
+  /// on a letter its selection is still open: the preview shows the current winner and
+  /// sliding can still change it, so nothing may be committed until the finger comes up.
+  /// SPEC.md A.20 records that as a property we deliberately have.
+  ///
+  /// **A plane key has no winner to revise.** There is nothing to slide to, nothing in
+  /// the constellation depends on it, and it produces no character — so waiting for the
+  /// lift buys nothing and costs the whole delay. Stock resolves it as the finger lands:
+  /// a capture 280ms into a press on stock's `123` already reads `ABC`, measured on an
+  /// iPhone 17 Pro at 402pt, 2026-09-06. SPEC.md A.26.
+  ///
+  /// The switch is exhaustive on purpose. Shift, delete, the globe and the return key
+  /// each have their own argument and none of them has been measured, so a role added
+  /// later has to say which moment it wants rather than inheriting one.
+  public var resolution: KeyResolution {
+    switch self {
+    case .plane:
+      return .touchDown
+    case .letter, .punctuation, .shift, .delete, .space, .newline, .nextKeyboard:
+      return .liftOff
+    }
+  }
+}
+
 /// One key, with the role it plays and the frame it occupies in keyboard coordinates.
 public struct Key: Sendable {
   public let id: KeyID

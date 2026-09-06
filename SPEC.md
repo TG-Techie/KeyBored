@@ -1894,9 +1894,11 @@ holds constant will stay irrelevant.
 thing this project reimplements:
 
 - *Selection commits at lift-off, not at touch-down.* `KeyboardView.touchesEnded` resolves
-  the target at the lift point and calls `onKey` there; `touchesBegan` only draws. So
-  sliding a finger before lifting changes the character, as it does on stock, and the key
-  preview is live feedback rather than a receipt.
+  the target at the lift point and calls `onKey` there; `touchesBegan` draws the press and,
+  for a key whose role says so, acts. So sliding a finger before lifting changes the
+  character, as it does on stock, and the key preview is live feedback rather than a
+  receipt. The one role that acts as the finger lands is the plane key, which has no
+  selection to revise — A.26.
 - *The space bar accepts the top suggestion and tapping the displayed candidate rejects
   it.* A space runs `commitWord()`, which applies the correction; the left bubble is the
   literal, and tapping it inserts what was actually typed. Getting this inverted is the
@@ -2199,12 +2201,13 @@ the keys that show a pressed cap at all — a letter draws its preview instead.
    what stock shows *before* the threshold, and this is a different mechanism that replaces
    it after.
 
-3. **Stock's plane key acts on touch-down; every key here acts on lift.** A capture 280ms
+3. **Stock's plane key acts on touch-down; every key here acted on lift.** A capture 280ms
    into a press on `123` already read `ABC` — the plane had switched with the finger still
-   down. `KeyboardView.touchesBegan` only records the target and draws the press; everything
-   that acts is in `touchesEnded`. For a letter that is correct and deliberate — A.20 records
-   commit-at-lift-off as one of the two patent properties this keyboard already had — but
-   the plane key is not a letter and nothing about the constellation requires it to wait.
+   down. `KeyboardView.touchesBegan` only recorded the target and drew the press; everything
+   that acted was in `touchesEnded`. For a letter that is correct and deliberate — A.20
+   records commit-at-lift-off as one of the two patent properties this keyboard already had
+   — but the plane key is not a letter and nothing about the constellation requires it to
+   wait. **This one is fixed; A.26 is the change and the verification.**
 
 **Both long presses were found by measuring the wrong thing first.** A two-second hold on
 the space bar produced a keyboard with no glyphs and no return key, which read as a screen
@@ -2212,6 +2215,55 @@ captured mid-animation; the whole plate had changed, so the first reading was th
 instrument had caught a transition. It had caught the trackpad. The fix to the method is in
 `press402.sh`: hold for one second and capture at 280ms, because **iOS's own long-press
 gestures fire at about half a second and a longer hold measures those instead of the cap.**
+
+
+### A.26 — the plane key acts as the finger lands
+
+A.25 item 3 measured it and this is the change. Stock's `123` resolves on touch-down: a
+capture 280ms into a press on stock already read `ABC`, with the finger still down. Every
+key here resolved on lift, so the plane arrived a whole press later than stock's.
+
+**Why this is not an exception to commit-at-lift-off.** A.20 records lift-off commit as a
+property this keyboard deliberately has, and the reason for it is that a letter's selection
+must stay changeable while the finger is down — the preview shows the current winner and
+sliding can still change it. **A plane key has no winner to revise.** There is nothing to
+slide to, nothing in the constellation depends on it, and it enters no character. So acting
+on touch-down here is not an exception to the rule; it is the rule applied to a key the
+rule was never about.
+
+**Where it is said, and why there.** `KeyRole.resolution` in `Shared/KeyboardGeometry.swift`
+returns `.touchDown` for `.plane` and `.liftOff` for everything else, in one exhaustive
+switch. It is a property of the role rather than a case the touch layer tests, so a key
+cannot be made to act at both moments, and a role added later has to name its own moment
+rather than inheriting one. Shift, delete, the globe and the return key are named in that
+switch and stay on lift: each has its own argument and none of them was measured.
+
+**A touch acts exactly once, and the guard is an absence rather than a flag.**
+`KeyboardView.held` now holds only fingers that still owe an action. A finger on a
+touch-down target acts as it lands and is never recorded, so `release` hands nothing back
+at lift and the lift resolves nothing. That is not a spare check beside the first one — it
+is the same fact stored once. It matters here more than anywhere: a plane switch rebuilds
+every cap, so the key under a lifting finger is not the key it went down on, and a second
+resolution would have typed whatever now occupies that position.
+
+**Verified in the hand, not only in the test.** iPhone 17 Pro simulator at 402pt, light
+appearance, Safari's address field, 2026-09-06 11:58 EDT, held one second and captured at
+280ms with `press402.sh`:
+
+| pressed | plane at 280ms, finger still down |
+|---|---|
+| `123` on letters | numbers — the cap under the finger reads `ABC` |
+| `#+=` on numbers | symbols |
+| `ABC` on symbols | letters |
+
+After each lift the plane stayed where the press had put it, nothing bounced back, and the
+field was unchanged — `z` before and `z` after all three. Then `h`, `w`, `h`, space typed
+`zhwh ` on the letters plane, so lift-off commit is untouched.
+
+`onlyThePlaneKeysActOnTouchDown` in `KeyBoredTests/KeyboardViewTests.swift` asserts the
+whole touch-down set across the three planes rather than asserting the plane key alone. The
+risk this change carried was never that the plane key would fail to move; it was that the
+class around it would move with it, and only a test of the set can fail on that.
 
 
 ## Appendix B — sources
